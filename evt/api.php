@@ -105,13 +105,11 @@ try {
             if ($folderId<=0 || $eventId<=0) throw new InvalidArgumentException('folder_id and event_id required');
 
             $fileUrl = (string)($_POST['file_url'] ?? '');
-            $localPath = (string)($_POST['local_path'] ?? '');
             $display = (string)($_POST['display_name'] ?? '');
             $fileType = (string)($_POST['file_type'] ?? '');
 
             folder_link_file_to_event($folderId, $eventId, [
                 'file_url' => $fileUrl,
-                'local_path' => $localPath !== '' ? $localPath : null,
                 'display_name' => $display !== '' ? $display : null,
                 'file_type' => $fileType !== '' ? $fileType : null,
             ]);
@@ -127,49 +125,6 @@ try {
             if ($folderId<=0 || $eventFileId<=0) throw new InvalidArgumentException('folder_id and event_file_id required');
             folder_remove_event_file($folderId, $eventFileId);
             json_response(['ok'=>true]);
-        }
-
-        case 'inbox.list': {
-            $folderId = (int)($_GET['folder_id'] ?? 0);
-            if ($folderId<=0) throw new InvalidArgumentException('folder_id required');
-            $files = folder_list_inbox_files($folderId);
-            json_response(['ok'=>true, 'files'=>$files]);
-        }
-
-        case 'inbox.upload': {
-            require_post();
-            $folderId = (int)($_POST['folder_id'] ?? 0);
-            if ($folderId<=0) throw new InvalidArgumentException('folder_id required');
-            if (!isset($_FILES['files'])) throw new InvalidArgumentException('files[] required');
-            $saved = folder_save_uploads_to_inbox($folderId, $_FILES['files']);
-            json_response(['ok'=>true, 'saved'=>$saved]);
-        }
-
-        // Serve uploaded files (local-only)
-        // URL: api.php?action=download&folder_id=1&name=filename.ext
-        case 'download': {
-            $folderId = (int)($_GET['folder_id'] ?? 0);
-            $name = (string)($_GET['name'] ?? '');
-            if ($folderId<=0 || $name==='') { http_response_code(400); exit; }
-
-            $f = registry_get_folder($folderId);
-            if (!$f) { http_response_code(404); exit; }
-
-            $folderPath = (string)$f['path'];
-            folder_init_storage($folderPath);
-            $dir = folder_files_dir($folderPath);
-
-            // prevent traversal
-            $name = basename($name);
-            $full = safe_join($dir, $name);
-            if (!is_file($full)) { http_response_code(404); exit; }
-
-            $mime = mime_content_type($full) ?: 'application/octet-stream';
-            header('Content-Type: ' . $mime);
-            header('Content-Length: ' . filesize($full));
-            header('Content-Disposition: inline; filename="' . $name . '"');
-            readfile($full);
-            exit;
         }
 
         default:

@@ -37,11 +37,7 @@ require_once __DIR__ . '/lib/util.php';
 
     .topbar { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
     .topbar input { flex:1; }
-    .split { display:grid; grid-template-rows: 220px 1fr; gap:12px; height:100%; }
-
     .dropHint { border:2px dashed #cbd5e1; border-radius:12px; padding:10px; text-align:center; color:#64748b; }
-    .fileItem { display:flex; justify-content:space-between; gap:10px; align-items:center; }
-    .fileItem a { text-decoration:none; color:#111827; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New"; font-size:12px; color:#6b7280; }
 
     .status { padding:8px 12px; border-top:1px solid #e5e7eb; font-size:13px; color:#374151; background:#f9fafb; }
@@ -51,7 +47,7 @@ require_once __DIR__ . '/lib/util.php';
 <body>
 <header>
   <strong><?= htmlspecialchars(APP_TITLE) ?></strong>
-  <span class="muted">Local-first • SQLite per folder • Drag file → event to auto-link</span>
+  <span class="muted">Shared MySQL • URL-only attachments</span>
 </header>
 
 <div class="app">
@@ -89,63 +85,41 @@ require_once __DIR__ . '/lib/util.php';
   </div>
 
   <!-- RIGHT -->
-  <div class="col right">
-    <div class="split">
-      <!-- Files Inbox -->
-      <div>
-        <h3>Files Inbox</h3>
-        <div class="row">
-          <input type="file" id="filePicker" multiple />
-          <button id="btnUpload" disabled>Upload</button>
-        </div>
-        <div class="dropHint" id="dropZone" style="margin-top:10px;">
-          Drop files here to upload (or use picker above)
-        </div>
-        <div class="list" id="inboxList" style="margin-top:10px;"></div>
-      </div>
-
-      <!-- Event Details -->
-      <div>
-        <h3>Event Details</h3>
-        <div class="small" id="selectedEventInfo">No event selected</div>
-        <div style="margin-top:10px;">
-          <label class="small">Date & time</label>
-          <input id="evDate" placeholder="YYYY-MM-DD HH:MM" />
-        </div>
-        <div style="margin-top:8px;">
-          <label class="small">Name</label>
-          <input id="evName" placeholder="Event name" />
-        </div>
-        <div style="margin-top:8px;">
-          <label class="small">Description</label>
-          <textarea id="evDesc" placeholder="Event description"></textarea>
-        </div>
-        <div style="margin-top:8px;">
-          <label class="small">Remark</label>
-          <textarea id="evRemark" placeholder="Event remark"></textarea>
-        </div>
-        <div style="margin-top:8px;">
-          <label class="small">Tags (comma separated)</label>
-          <input id="evTagsCsv" placeholder="e.g., meeting, finance, urgent" />
-          <div class="tagInputHelp">Tip: Type new tags here; they’ll be created automatically on Save.</div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <button id="btnSaveEvent" disabled>Save</button>
-          <button class="secondary" id="btnAddUrl" disabled>Add URL</button>
-        </div>
-
-        <h3 style="margin-top:14px;">Linked Files</h3>
-        <div class="dropHint" id="eventDropHint">
-          Drag a file from Files Inbox and drop here to link to this event
-        </div>
-        <div class="list" id="linkedFilesList" style="margin-top:10px;"></div>
-      </div>
+    <div class="col right">
+    <h3>Event Details</h3>
+    <div class="small" id="selectedEventInfo">No event selected</div>
+    <div style="margin-top:10px;">
+      <label class="small">Date & time</label>
+      <input id="evDate" placeholder="YYYY-MM-DD HH:MM" />
     </div>
-  </div>
-</div>
+    <div style="margin-top:8px;">
+      <label class="small">Name</label>
+      <input id="evName" placeholder="Event name" />
+    </div>
+    <div style="margin-top:8px;">
+      <label class="small">Description</label>
+      <textarea id="evDesc" placeholder="Event description"></textarea>
+    </div>
+    <div style="margin-top:8px;">
+      <label class="small">Remark</label>
+      <textarea id="evRemark" placeholder="Event remark"></textarea>
+    </div>
+    <div style="margin-top:8px;">
+      <label class="small">Tags (comma separated)</label>
+      <input id="evTagsCsv" placeholder="e.g., meeting, finance, urgent" />
+      <div class="tagInputHelp">Tip: Type new tags here; they’ll be created automatically on Save.</div>
+    </div>
 
-<div class="status" id="status">Ready.</div>
+    <div class="row" style="margin-top:10px;">
+      <button id="btnSaveEvent" disabled>Save</button>
+      <button class="secondary" id="btnAddUrl" disabled>Add URL</button>
+    </div>
+
+    <h3 style="margin-top:14px;">Linked Files</h3>
+    <div class="list" id="linkedFilesList" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="status"' id="status">Ready.</div>
 
 <script>
 let state = {
@@ -153,7 +127,6 @@ let state = {
   folders: [],
   tagFilterId: null,
   selectedEventId: null,
-  inboxFiles: [],
   tags: [],
 };
 
@@ -194,7 +167,6 @@ async function loadFolders(){
   state.folders = data.folders;
   renderFolders();
   qs('btnAddEvent').disabled = !state.folderId;
-  qs('btnUpload').disabled = !state.folderId;
 }
 
 function renderFolders(){
@@ -203,15 +175,13 @@ function renderFolders(){
   state.folders.forEach(f=>{
     const div = document.createElement('div');
     div.className = 'item' + (state.folderId===+f.id ? ' active':'' );
-    div.innerHTML = `<div><strong>${escapeHtml(f.name)}</strong></div>
-                     <div class="small mono">${escapeHtml(f.path)}</div>`;
+    div.innerHTML = `<div><strong>${escapeHtml(f.name)}</strong></div>`;
     div.onclick = async ()=>{
       state.folderId = +f.id;
       state.tagFilterId = null;
       state.selectedEventId = null;
       qs('btnRemoveFolder').disabled = false;
       qs('btnAddEvent').disabled = false;
-      qs('btnUpload').disabled = false;
       qs('filterInfo').textContent = '';
       await reloadFolderContext();
     };
@@ -246,7 +216,6 @@ async function removeFolder(){
   clearRightPane();
   renderTags([]);
   renderEvents([]);
-  renderInbox([]);
 }
 
 // ----- TAGS -----
@@ -318,24 +287,6 @@ function renderEvents(events){
         <div class="small mono">#${ev.id}</div>
       </div>
     `;
-
-    // Drop target: allow dropping inbox files to link
-    div.ondragover = (e)=>{ e.preventDefault(); div.style.background='#eef2ff'; };
-    div.ondragleave = ()=>{ div.style.background=''; };
-    div.ondrop = async (e)=>{
-      e.preventDefault();
-      div.style.background='';
-      if(!state.selectedEventId && state.selectedEventId !== +ev.id){
-        // ok, we'll link to this event directly anyway
-      }
-      const payload = e.dataTransfer.getData('text/plain');
-      if(!payload) return;
-      const file = JSON.parse(payload);
-      await linkFileToEvent(+ev.id, file);
-      setStatus('File linked to event.');
-      await loadEvents();
-      if(state.selectedEventId===+ev.id) await loadEventDetails(+ev.id);
-    };
 
     div.onclick = async ()=>{
       state.selectedEventId = +ev.id;
@@ -416,104 +367,11 @@ async function addUrl(){
   if(!url) return;
   await linkFileToEvent(state.selectedEventId, {
     file_url: url.trim(),
-    local_path: '',
     display_name: url.trim(),
-    file_type: 'http'
+    file_type: 'url'
   });
   await loadEventDetails(state.selectedEventId);
   await loadEvents();
-}
-
-// ----- INBOX -----
-async function loadInbox(){
-  if(!state.folderId) return;
-  const data = await apiGet('inbox.list', { folder_id: state.folderId });
-  state.inboxFiles = data.files;
-  renderInbox(state.inboxFiles);
-}
-
-function renderInbox(files){
-  const box = qs('inboxList');
-  box.innerHTML = '';
-  if(!files.length){
-    box.innerHTML = `<div class="item small">No files yet. Upload some.</div>`;
-    return;
-  }
-  files.forEach(f=>{
-    const div = document.createElement('div');
-    div.className = 'item fileItem';
-    div.draggable = true;
-    const size = f.bytes ? ` • ${escapeHtml(formatBytes(f.bytes))}` : '';
-    const downloadUrl = `api.php?action=download&folder_id=${state.folderId}&name=${encodeURIComponent(f.display_name)}`;
-    div.innerHTML = `
-      <div>
-        <div><a href="${downloadUrl}" target="_blank">${escapeHtml(f.display_name)}</a></div>
-        <div class="small mono">${escapeHtml(f.local_path)}${size}</div>
-      </div>
-      <div class="small">↗</div>
-    `;
-    div.ondragstart = (e)=>{
-      e.dataTransfer.setData('text/plain', JSON.stringify({
-        file_url: downloadUrl,                 // store web-served URL
-        local_path: f.local_path || '',
-        display_name: f.display_name || '',
-        file_type: 'local_file'
-      }));
-    };
-    box.appendChild(div);
-  });
-}
-
-async function uploadFiles(){
-  if(!state.folderId) return setStatus('Select a folder first.');
-  const input = qs('filePicker');
-  if(!input.files || !input.files.length) return setStatus('Pick files first.');
-  const fd = new FormData();
-  fd.append('folder_id', state.folderId);
-  for (const file of input.files) fd.append('files[]', file);
-  await apiPost('inbox.upload', {}, fd);
-  input.value='';
-  setStatus('Files uploaded.');
-  await loadInbox();
-}
-
-// Drop zone uploads
-function setupDropZone(){
-  const dz = qs('dropZone');
-  dz.ondragover = (e)=>{ e.preventDefault(); dz.style.background='#f3f4f6'; };
-  dz.ondragleave = ()=>{ dz.style.background=''; };
-  dz.ondrop = async (e)=>{
-    e.preventDefault();
-    dz.style.background='';
-    if(!state.folderId) return setStatus('Select folder first.');
-    const files = e.dataTransfer.files;
-    if(!files || !files.length) return;
-    const fd = new FormData();
-    fd.append('folder_id', state.folderId);
-    for (const file of files) fd.append('files[]', file);
-    await apiPost('inbox.upload', {}, fd);
-    setStatus('Files uploaded from drop.');
-    await loadInbox();
-  };
-}
-
-// Link drop hint in event details
-function setupEventDrop(){
-  const zone = qs('eventDropHint');
-  zone.ondragover = (e)=>{ e.preventDefault(); zone.style.background='#f3f4f6'; };
-  zone.ondragleave = ()=>{ zone.style.background=''; };
-  zone.ondrop = async (e)=>{
-    e.preventDefault();
-    zone.style.background='';
-    if(!state.folderId || !state.selectedEventId) return setStatus('Select an event first.');
-    const payload = e.dataTransfer.getData('text/plain');
-    if(!payload) return;
-    const file = JSON.parse(payload);
-    await linkFileToEvent(state.selectedEventId, file);
-    setStatus('File linked to selected event.');
-    await loadEventDetails(state.selectedEventId);
-    await loadEvents();
-  };
 }
 
 async function linkFileToEvent(eventId, file){
@@ -521,7 +379,6 @@ async function linkFileToEvent(eventId, file){
     folder_id: state.folderId,
     event_id: eventId,
     file_url: file.file_url || '',
-    local_path: file.local_path || '',
     display_name: file.display_name || '',
     file_type: file.file_type || ''
   });
@@ -538,13 +395,11 @@ function renderLinkedFiles(files){
     const div = document.createElement('div');
     div.className = 'item';
     const url = f.file_url || '';
-    const isWeb = url.startsWith('http://') || url.startsWith('https://');
-    const link = isWeb ? url : url; // download links already absolute
+    const link = url;
     div.innerHTML = `
       <div style="display:flex; justify-content:space-between; gap:10px;">
         <div>
           <div><a href="${escapeAttr(link)}" target="_blank">${escapeHtml(f.display_name || f.file_url)}</a></div>
-          <div class="small mono">${escapeHtml(f.local_path || '')}</div>
         </div>
         <button class="danger" style="padding:6px 8px;" title="Remove">X</button>
       </div>
@@ -562,7 +417,6 @@ function renderLinkedFiles(files){
 async function reloadFolderContext(){
   setStatus('Loading folder...');
   await loadTags();
-  await loadInbox();
   await loadEvents();
   clearRightPane();
   setStatus('Ready.');
@@ -573,13 +427,6 @@ function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[c]));
 }
 function escapeAttr(s){ return escapeHtml(s); }
-function formatBytes(n){
-  n = Number(n||0);
-  const units = ['B','KB','MB','GB','TB'];
-  let i=0;
-  while(n>=1024 && i<units.length-1){ n/=1024; i++; }
-  return (i===0 ? n.toFixed(0) : n.toFixed(1)) + ' ' + units[i];
-}
 
 // ----- WIREUP -----
 qs('btnCreateFolder').onclick = ()=>createFolder().catch(e=>setStatus(e.message));
@@ -588,7 +435,6 @@ qs('btnRemoveFolder').onclick = ()=>removeFolder().catch(e=>setStatus(e.message)
 qs('btnCreateTag').onclick = ()=>createTag().catch(e=>setStatus(e.message));
 qs('btnAddEvent').onclick = ()=>addEvent().catch(e=>setStatus(e.message));
 qs('btnSaveEvent').onclick = ()=>saveEvent().catch(e=>setStatus(e.message));
-qs('btnUpload').onclick = ()=>uploadFiles().catch(e=>setStatus(e.message));
 qs('btnAddUrl').onclick = ()=>addUrl().catch(e=>setStatus(e.message));
 
 qs('eventSearch').addEventListener('input', ()=>loadEvents().catch(e=>setStatus(e.message)));
@@ -604,10 +450,10 @@ qs('newTagName').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ e.preventDefault(); createTag().catch(err=>setStatus(err.message)); }
 });
 
-setupDropZone();
-setupEventDrop();
-
 loadFolders().catch(e=>setStatus(e.message));
 </script>
 </body>
 </html>
+
+
+

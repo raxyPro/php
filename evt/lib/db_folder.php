@@ -5,80 +5,60 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/util.php';
 require_once __DIR__ . '/db_registry.php';
 
-function folder_db_path(string $folderPath): string {
-    return safe_join($folderPath, FOLDER_APP_SUBDIR, FOLDER_DB_FILENAME);
-}
-
-function folder_files_dir(string $folderPath): string {
-    return safe_join($folderPath, FOLDER_FILES_SUBDIR);
-}
-
-function folder_init_storage(string $folderPath): void {
-    // Ensure folder is under base for safety
-    if (!is_within_base($folderPath, BASE_FOLDERS_DIR)) {
-        throw new RuntimeException('Folder path is outside BASE_FOLDERS_DIR (blocked for safety).');
-    }
-    ensure_dir($folderPath);
-    ensure_dir(safe_join($folderPath, FOLDER_APP_SUBDIR));
-    ensure_dir(folder_files_dir($folderPath));
-}
-
 function folder_pdo(int $folderId): PDO {
     $f = registry_get_folder($folderId);
     if (!$f) throw new RuntimeException('Folder not found');
 
-    $folderPath = (string)$f['path'];
-    folder_init_storage($folderPath);
-
-    $dbPath = folder_db_path($folderPath);
-    $pdo = new PDO('sqlite:' . $dbPath, null, null, [
+    $pdo = new PDO(MYSQL_DSN, MYSQL_USER, MYSQL_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
-    $pdo->exec('PRAGMA foreign_keys = ON;');
 
     // Schema
     $pdo->exec('
         CREATE TABLE IF NOT EXISTS tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            name_norm TEXT NOT NULL UNIQUE,
-            created_at TEXT NOT NULL
-        );
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            folder_id INT UNSIGNED NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            name_norm VARCHAR(255) NOT NULL,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_tags_folder_norm (folder_id, name_norm),
+            INDEX idx_tags_folder (folder_id),
+            CONSTRAINT fk_tags_folder FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_date TEXT NOT NULL,
-            name TEXT NOT NULL,
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            folder_id INT UNSIGNED NOT NULL,
+            event_date DATETIME NOT NULL,
+            name VARCHAR(255) NOT NULL,
             description TEXT,
             remark TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            INDEX idx_events_folder_date (folder_id, event_date),
+            CONSTRAINT fk_events_folder FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS event_files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id INTEGER NOT NULL,
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            event_id INT UNSIGNED NOT NULL,
             file_url TEXT NOT NULL,
-            local_path TEXT,
-            display_name TEXT,
-            file_type TEXT,
-            added_at TEXT NOT NULL,
-            UNIQUE(event_id, file_url),
-            FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE
-        );
+            display_name VARCHAR(512),
+            file_type VARCHAR(64),
+            added_at DATETIME NOT NULL,
+            UNIQUE KEY uq_event_file (event_id, file_url(255)),
+            INDEX idx_files_event (event_id),
+            CONSTRAINT fk_files_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
         CREATE TABLE IF NOT EXISTS event_tags (
-            event_id INTEGER NOT NULL,
-            tag_id INTEGER NOT NULL,
+            event_id INT UNSIGNED NOT NULL,
+            tag_id INT UNSIGNED NOT NULL,
             PRIMARY KEY(event_id, tag_id),
-            FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE,
-            FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
-        CREATE INDEX IF NOT EXISTS idx_files_event ON event_files(event_id);
-        CREATE INDEX IF NOT EXISTS idx_tags_norm ON tags(name_norm);
+            CONSTRAINT fk_event_tags_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+            CONSTRAINT fk_event_tags_tag FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ');
 
     return $pdo;
@@ -92,7 +72,9 @@ function tag_norm(string $name): string {
 
 function folder_list_tags(int $folderId): array {
     $pdo = folder_pdo($folderId);
-    return $pdo->query('SELECT id, name FROM tags ORDER BY name_norm ASC')->fetchAll();
+    $stmt = $pdo->prepare('SELECT id, name FROM tags WHERE folder_id=:fid ORDER BY name_norm ASC');
+    $stmt->execute([':fid'=>$folderId]);
+    return $stmt->fetchAll();
 }
 
 function folder_create_tag(int $folderId, string $name): array {
@@ -101,12 +83,21 @@ function folder_create_tag(int $folderId, string $name): array {
     if ($name === '') throw new InvalidArgumentException('Tag name required');
     $norm = tag_norm($name);
 
-    $stmt = $pdo->prepare('INSERT OR IGNORE INTO tags(name, name_norm, created_at) VALUES(:n,:nn,:c)');
-    $stmt->execute([':n'=>$name, ':nn'=>$norm, ':c'=>now_iso()]);
+    $stmt = $pdo->prepare('
+      INSERT INTO tags(folder_id, name, name_norm, created_at)
+      VALUES(:fid,:n,:nn,:c)
+      ON DUPLICATE KEY UPDATE name = VALUES(name)
+    ');
+    $stmt->execute([
+        ':fid'=>$folderId,
+        ':n'=>$name,
+        ':nn'=>$norm,
+        ':c'=>(new DateTimeImmutable('now'))->format('Y-m-d H:i:s')
+    ]);
 
     // Fetch
-    $stmt = $pdo->prepare('SELECT id, name FROM tags WHERE name_norm=:nn');
-    $stmt->execute([':nn'=>$norm]);
+    $stmt = $pdo->prepare('SELECT id, name FROM tags WHERE folder_id=:fid AND name_norm=:nn');
+    $stmt->execute([':fid'=>$folderId, ':nn'=>$norm]);
     $row = $stmt->fetch();
     if (!$row) throw new RuntimeException('Failed to create/fetch tag');
     return $row;
@@ -117,6 +108,9 @@ function folder_list_events(int $folderId, ?string $q, ?int $tagId): array {
 
     $where = [];
     $params = [];
+
+    $where[] = 'e.folder_id = :fid';
+    $params[':fid'] = $folderId;
 
     if ($q !== null && trim($q) !== '') {
         $where[] = '(e.name LIKE :q OR e.description LIKE :q OR e.remark LIKE :q)';
@@ -157,8 +151,8 @@ function folder_list_events(int $folderId, ?string $q, ?int $tagId): array {
 
 function folder_get_event(int $folderId, int $eventId): ?array {
     $pdo = folder_pdo($folderId);
-    $stmt = $pdo->prepare('SELECT * FROM events WHERE id=:id');
-    $stmt->execute([':id'=>$eventId]);
+    $stmt = $pdo->prepare('SELECT * FROM events WHERE id=:id AND folder_id=:fid');
+    $stmt->execute([':id'=>$eventId, ':fid'=>$folderId]);
     $ev = $stmt->fetch();
     if (!$ev) return null;
 
@@ -173,7 +167,7 @@ function folder_get_event(int $folderId, int $eventId): ?array {
     $ev['tags'] = $stmtT->fetchAll();
 
     $stmtF = $pdo->prepare('
-      SELECT id, file_url, local_path, display_name, file_type, added_at
+      SELECT id, file_url, display_name, file_type, added_at
       FROM event_files
       WHERE event_id=:eid
       ORDER BY id DESC
@@ -192,18 +186,19 @@ function folder_create_event(int $folderId, array $data): array {
 
     $eventDate = (string)($data['event_date'] ?? '');
     if ($eventDate === '') {
-        $eventDate = (new DateTimeImmutable('now'))->format('Y-m-d H:i');
+        $eventDate = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
     }
 
     $desc = (string)($data['description'] ?? '');
     $remark = (string)($data['remark'] ?? '');
 
-    $now = now_iso();
+    $now = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
     $stmt = $pdo->prepare('
-      INSERT INTO events(event_date, name, description, remark, created_at, updated_at)
-      VALUES(:d,:n,:ds,:r,:c,:u)
+      INSERT INTO events(folder_id, event_date, name, description, remark, created_at, updated_at)
+      VALUES(:fid,:d,:n,:ds,:r,:c,:u)
     ');
     $stmt->execute([
+        ':fid'=>$folderId,
         ':d'=>$eventDate,
         ':n'=>$name,
         ':ds'=>$desc,
@@ -231,15 +226,16 @@ function folder_update_event(int $folderId, int $eventId, array $data): array {
     $stmt = $pdo->prepare('
       UPDATE events
       SET event_date=:d, name=:n, description=:ds, remark=:r, updated_at=:u
-      WHERE id=:id
+      WHERE id=:id AND folder_id=:fid
     ');
     $stmt->execute([
         ':d'=>$eventDate,
         ':n'=>$name,
         ':ds'=>$desc,
         ':r'=>$remark,
-        ':u'=>now_iso(),
-        ':id'=>$eventId
+        ':u'=>(new DateTimeImmutable('now'))->format('Y-m-d H:i:s'),
+        ':id'=>$eventId,
+        ':fid'=>$folderId
     ]);
 
     return folder_get_event($folderId, $eventId) ?? ['id'=>$eventId];
@@ -271,21 +267,20 @@ function folder_link_file_to_event(int $folderId, int $eventId, array $file): vo
     $fileUrl = trim((string)($file['file_url'] ?? ''));
     if ($fileUrl === '') throw new InvalidArgumentException('file_url required');
 
-    $localPath = isset($file['local_path']) ? trim((string)$file['local_path']) : null;
     $display = isset($file['display_name']) ? trim((string)$file['display_name']) : null;
     $type = isset($file['file_type']) ? trim((string)$file['file_type']) : null;
 
     $stmt = $pdo->prepare('
-      INSERT OR IGNORE INTO event_files(event_id, file_url, local_path, display_name, file_type, added_at)
-      VALUES(:e,:u,:p,:d,:t,:a)
+      INSERT INTO event_files(event_id, file_url, display_name, file_type, added_at)
+      VALUES(:e,:u,:d,:t,:a)
+      ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), file_type = VALUES(file_type)
     ');
     $stmt->execute([
         ':e'=>$eventId,
         ':u'=>$fileUrl,
-        ':p'=>$localPath !== '' ? $localPath : null,
         ':d'=>$display !== '' ? $display : null,
         ':t'=>$type !== '' ? $type : null,
-        ':a'=>now_iso()
+        ':a'=>(new DateTimeImmutable('now'))->format('Y-m-d H:i:s')
     ]);
 }
 
@@ -293,87 +288,4 @@ function folder_remove_event_file(int $folderId, int $eventFileId): void {
     $pdo = folder_pdo($folderId);
     $stmt = $pdo->prepare('DELETE FROM event_files WHERE id=:id');
     $stmt->execute([':id'=>$eventFileId]);
-}
-
-function folder_list_inbox_files(int $folderId): array {
-    $f = registry_get_folder($folderId);
-    if (!$f) throw new RuntimeException('Folder not found');
-
-    $folderPath = (string)$f['path'];
-    folder_init_storage($folderPath);
-    $dir = folder_files_dir($folderPath);
-
-    $items = [];
-    $dh = opendir($dir);
-    if ($dh === false) return [];
-
-    while (($file = readdir($dh)) !== false) {
-        if ($file === '.' || $file === '..') continue;
-        $full = safe_join($dir, $file);
-        if (!is_file($full)) continue;
-
-        $items[] = [
-            'display_name' => $file,
-            'local_path' => normalize_folder_path($full),
-            'file_url' => 'files/' . rawurlencode($file), // web-served URL via api.php?action=download
-            'bytes' => filesize($full) ?: 0,
-            'mtime' => filemtime($full) ?: 0,
-        ];
-    }
-    closedir($dh);
-
-    usort($items, fn($a,$b) => ($b['mtime'] <=> $a['mtime']));
-    return $items;
-}
-
-function folder_save_uploads_to_inbox(int $folderId, array $files): array {
-    $f = registry_get_folder($folderId);
-    if (!$f) throw new RuntimeException('Folder not found');
-
-    $folderPath = (string)$f['path'];
-    folder_init_storage($folderPath);
-    $dir = folder_files_dir($folderPath);
-
-    $saved = [];
-    // Handle multiple uploads under input name="files[]"
-    $names = $files['name'] ?? [];
-    $tmp = $files['tmp_name'] ?? [];
-    $errors = $files['error'] ?? [];
-    $sizes = $files['size'] ?? [];
-
-    for ($i=0; $i<count($names); $i++) {
-        $err = (int)($errors[$i] ?? UPLOAD_ERR_NO_FILE);
-        if ($err !== UPLOAD_ERR_OK) continue;
-
-        $size = (int)($sizes[$i] ?? 0);
-        if ($size > MAX_UPLOAD_BYTES) continue;
-
-        $orig = (string)$names[$i];
-        $orig = preg_replace('/[^\w.\- ]+/u', '_', $orig) ?? $orig;
-        $orig = trim($orig);
-        if ($orig === '') $orig = 'upload-' . bin2hex(random_bytes(4));
-
-        // Ensure unique filename
-        $target = safe_join($dir, $orig);
-        $base = pathinfo($orig, PATHINFO_FILENAME);
-        $ext  = pathinfo($orig, PATHINFO_EXTENSION);
-        $k = 1;
-        while (file_exists($target)) {
-            $candidate = $base . '-' . $k . ($ext ? ('.' . $ext) : '');
-            $target = safe_join($dir, $candidate);
-            $k++;
-        }
-
-        if (!move_uploaded_file((string)$tmp[$i], $target)) continue;
-
-        $saved[] = [
-            'display_name' => basename($target),
-            'local_path' => normalize_folder_path($target),
-            'file_url' => 'files/' . rawurlencode(basename($target)),
-            'bytes' => filesize($target) ?: 0,
-            'mtime' => filemtime($target) ?: 0,
-        ];
-    }
-
-    return $saved;
 }
