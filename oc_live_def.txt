@@ -1,0 +1,3 @@
+agent_feed_live.php
+in get_live_cash_data
+change the column to dt,opn,hgh,low,cls,acls,vol
