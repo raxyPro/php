@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+<body>
+<button id="btn">Load Positions</button>
+<pre id="out"></pre>
+<script>
+document.getElementById('btn').onclick = async () => {
+  const res = await fetch('ict.php?action=positions', { cache: 'no-store' });
+  const text = await res.text();
+  document.getElementById('out').textContent = `HTTP ${res.status}\n` + text;
+};
+</script>
+</body>
+</html>
