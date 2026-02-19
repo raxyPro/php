@@ -1,11 +1,11 @@
 <?php
-$dbHost = getenv("DB_HOST") ?: "127.0.0.1";
-$dbUser = getenv("DB_USER") ?: "rax";
-$dbPass = getenv("DB_PASS") ?: "512";
-$dbName = getenv("DB_NAME") ?: "stockdata";
-$dbPort = getenv("DB_PORT") ?: "3306";
-$dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
-$dbReady = true;
+$configPath = __DIR__ . DIRECTORY_SEPARATOR . "app.config";
+$appCfg = is_file($configPath) ? (parse_ini_file($configPath, false, INI_SCANNER_RAW) ?: []) : [];
+
+$dsn = trim((string)($appCfg["DB_DSN"] ?? ""));
+$dbUser = trim((string)($appCfg["DB_USER"] ?? ""));
+$dbPass = (string)($appCfg["DB_PASS"] ?? "");
+$dbReady = ($dsn !== "" && $dbUser !== "");
 $syms = [];
 $expdts = [];
 $rows = [];
@@ -13,6 +13,9 @@ $lastUpd = "";
 $error = "";
 
 try {
+    if (!$dbReady) {
+        throw new RuntimeException("Missing DB_DSN or DB_USER in app.config");
+    }
     $pdo = new PDO($dsn, $dbUser, $dbPass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

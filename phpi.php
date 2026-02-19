@@ -10,14 +10,26 @@ if (!function_exists('imap_open')) {
     exit(1);
 }
 
-// Edit these:
-$host = "imap.example.com";
-$port = 993;
-$user = "user@example.com";
-$pass = "password";
+$configPath = __DIR__ . DIRECTORY_SEPARATOR . "app.config";
+$appCfg = is_file($configPath) ? (parse_ini_file($configPath, false, INI_SCANNER_RAW) ?: []) : [];
 
-// SSL example:
-$mailbox = "{" . $host . ":" . $port . "/imap/ssl}INBOX";
+$host = (string)($appCfg["IMAP_HOST"] ?? "imap.example.com");
+$port = (int)($appCfg["IMAP_PORT"] ?? 993);
+$user = (string)($appCfg["MAIL_USERNAME"] ?? "user@example.com");
+$pass = (string)($appCfg["MAIL_PASSWORD"] ?? "password");
+$imapEnc = strtolower((string)($appCfg["IMAP_ENCRYPTION"] ?? "ssl"));
+$mailboxFlags = "/imap";
+if ($imapEnc === "ssl") {
+    $mailboxFlags .= "/ssl";
+} elseif ($imapEnc === "tls") {
+    $mailboxFlags .= "/tls";
+}
+$imapValidateRaw = strtolower((string)($appCfg["IMAP_VALIDATE_CERT"] ?? "true"));
+if (in_array($imapValidateRaw, ["0", "false", "no", "off"], true)) {
+    $mailboxFlags .= "/novalidate-cert";
+}
+
+$mailbox = "{" . $host . ":" . $port . $mailboxFlags . "}INBOX";
 
 echo "Connecting to: $mailbox\n";
 $imap = @imap_open($mailbox, $user, $pass);
