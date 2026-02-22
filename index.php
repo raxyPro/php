@@ -5,6 +5,7 @@ $apps = [
     ["file" => "mail.php", "description" => "Testing mail functionality"],
     ["file" => "oc_live.php", "description" => "Option Chain Live"],
     ["file" => "oc_order.php", "description" => "Trade list and Definition"],
+    ["file" => "prompt_manager.php", "description" => "Manage and copy app development prompts"],
     ["file" => "phpi.php", "description" => "PHP Information file"],
     ["file" => "poc.php", "description" => "Proof of Concept for API integration"],
 ];

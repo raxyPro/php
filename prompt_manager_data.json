@@ -1,0 +1,20 @@
+{
+    "apps": {
+        "Prompt Manager": [
+            {
+                "id": "p_20260219174047_d479e4",
+                "title": "",
+                "text": "i want to create an application php app manage my prompt for app development . so let us say i want to create an app for todo, so i will create a paplicatio called to do and start prompt and save it then i will copy the prompt and paste to codex or somwehre the idea is for applatil all the ompot will be mainted at one place when save a prompt give an option to copy",
+                "created_at": "2026-02-19 17:40:47",
+                "updated_at": "2026-02-19 17:40:47"
+            },
+            {
+                "id": "p_20260219174100_2d1fb2",
+                "title": "",
+                "text": "the interface should be left side application, and ability to create new application and when click on application right side show all prompt and at bottom add more prompt. new prompt will be saved and added to list. at prompt give option to edit delete and copy",
+                "created_at": "2026-02-19 17:41:00",
+                "updated_at": "2026-02-19 17:41:00"
+            }
+        ]
+    }
+}
