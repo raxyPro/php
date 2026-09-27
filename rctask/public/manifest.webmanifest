@@ -1,0 +1,10 @@
+{
+  "name": "rcfamily",
+  "short_name": "rcfamily",
+  "description": "Tasks planned by when you actually have time",
+  "start_url": "index.php",
+  "display": "standalone",
+  "theme_color": "#1F5F8B",
+  "background_color": "#F1F3F4",
+  "icons": [{ "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
