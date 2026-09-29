@@ -4,7 +4,7 @@
 -- Existing tasks are kept. Status mapping:
 --   To do -> New, In progress -> Progress, Waiting -> Progress, Done -> Completed
 -- Old "Notes" become the task's "Remark".
- 
+-----------
 -- 1. Missions
 CREATE TABLE IF NOT EXISTS missions (
   id            CHAR(36) NOT NULL PRIMARY KEY,
