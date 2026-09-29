@@ -13,11 +13,13 @@ final class Claude
         return trim((string)($CONFIG['anthropic_api_key'] ?? '')) !== '';
     }
 
-    /** @return array<int, array<string, mixed>> raw task objects from Claude */
-    public static function parseTasks(string $text, array $bandwidths): array
+    /**
+     * @return array{missions: array, tasks: array, ideas: array} raw objects from Claude
+     */
+    public static function parse(string $text, array $bandwidths, array $missions): array
     {
         global $CONFIG;
-        $prompt = self::prompt(mb_substr($text, 0, 4000), $bandwidths);
+        $prompt = self::prompt(mb_substr($text, 0, 4000), $bandwidths, $missions);
 
         $ch = curl_init('https://api.anthropic.com/v1/messages');
         curl_setopt_array($ch, [
@@ -31,7 +33,7 @@ final class Claude
             ],
             CURLOPT_POSTFIELDS => json_encode([
                 'model'      => $CONFIG['anthropic_model'] ?: 'claude-haiku-4-5',
-                'max_tokens' => 2000,
+                'max_tokens' => 3000,
                 'messages'   => [['role' => 'user', 'content' => $prompt]],
             ]),
         ]);
@@ -48,43 +50,66 @@ final class Claude
         $out = '';
         foreach ($data['content'] ?? [] as $c) $out .= $c['text'] ?? '';
 
-        $start = strpos($out, '[');
-        $end = strrpos($out, ']');
-        if ($start === false || $end === false || $end <= $start) return [];
-        $arr = json_decode(substr($out, $start, $end - $start + 1), true);
-        return is_array($arr) ? $arr : [];
+        $empty = ['missions' => [], 'tasks' => [], 'ideas' => []];
+        $start = strpos($out, '{');
+        $end = strrpos($out, '}');
+        if ($start === false || $end === false || $end <= $start) return $empty;
+        $obj = json_decode(substr($out, $start, $end - $start + 1), true);
+        if (!is_array($obj)) return $empty;
+        return [
+            'missions' => is_array($obj['missions'] ?? null) ? $obj['missions'] : [],
+            'tasks'    => is_array($obj['tasks'] ?? null) ? $obj['tasks'] : [],
+            'ideas'    => is_array($obj['ideas'] ?? null) ? $obj['ideas'] : [],
+        ];
     }
 
-    private static function prompt(string $text, array $bandwidths): string
+    private static function prompt(string $text, array $bandwidths, array $missions): string
     {
         $lines = array_map(
             fn($b) => sprintf('- %s: "%s" — %s (%s h/week)', $b['id'], $b['name'], $b['when'], $b['hoursPerWeek']),
             $bandwidths
         );
         $list = implode("\n", $lines);
+        $active = array_filter($missions, fn($m) => $m['status'] === 'Active');
+        $mlist = $active
+            ? implode("\n", array_map(fn($m) => sprintf('- %s: "%s"', $m['id'], $m['title']), $active))
+            : '(none yet)';
         $today = date('Y-m-d');
         $weekday = date('l');
 
         return <<<PROMPT
-You turn a person's free-text note into tasks for their personal task manager.
-Today is {$weekday}, {$today} (India). Dates written like 10-Sep-26 or 10/09/2026 are day-month-year.
+You turn a person's free-text note into missions, tasks and ideas for their personal execution app.
+Today is {$weekday}, {$today} (India). Dates like 10-Sep-26 or 10/09/2026 are day-month-year.
 
-The person plans by "bandwidth": the slot of their week when a task can realistically be done. Their bandwidths:
+DEFINITIONS
+- mission: a short-term goal or small project with several steps, e.g. "File ITR", "Buy EV". Only create one when the note clearly names a goal that has (or will need) several tasks, e.g. "File ITR: collect Form 16, call CA" or "mission Buy EV".
+- task: one concrete action.
+- idea: a thought, quote, insight or thing to remember that is not an action, e.g. "difference between gold and silver - no one remembers who came second". Lines starting with "idea:" are always ideas.
+
+EXISTING ACTIVE MISSIONS (link tasks to these by id when they clearly belong):
+{$mlist}
+
+BANDWIDTHS (the slot of the week when a task can realistically be done):
 {$list}
 
-Rules:
+RULES FOR TASKS
 - One task per distinct action. Split lists joined by commas, "and", or new lines.
-- title: short, starts with a verb, sentence case, no date words.
-- bandwidth: the id whose slot fits WHERE and WHEN the task can be done. If the note names a slot ("tonight", "on Saturday", "at office"), follow it. Job work goes to the office slot; quick phone-only actions to the on-the-go slot if one exists; long jobs or anything needing shops, travel or daylight to the weekend slot.
-- due: "YYYY-MM-DD" if a deadline or day is stated or clearly implied ("by Tuesday", "before 10-Oct-26", "tomorrow", "this Saturday"), else null.
-- priority: "High" if due within 3 days or marked urgent/important/asap; "Low" if "sometime", "someday" or optional; else "Medium".
+- title: short, starts with a verb, sentence case, no date/time words.
+- mission: an existing mission id, OR the exact title of a new mission you return in "missions", OR null.
+- bandwidth: the id whose slot fits WHERE and WHEN the task can be done. If the note names a slot ("tonight", "on Saturday", "at office"), follow it.
+- due: "YYYY-MM-DD" if a deadline or day is stated or clearly implied ("by Tuesday", "tomorrow", "this Saturday"), else null.
+- time: "HH:MM" (24h) if a time is stated ("at 5pm", "10:30"), else null.
+- priority: "High" if due within 3 days or urgent/important/asap; "Low" if someday/optional; else "Medium".
 - effort_min: realistic minutes, 5–480.
-- category: one of Work, Home, Family, Health, Finance, Vehicle, Shopping, Personal, Admin.
+- category: one of Work, Home, Family, Health, Finance, Vehicle, Shopping, Personal, Admin, Learning.
 - person: a named person the task involves, else null.
 - why: at most 12 words on why this bandwidth fits.
 
-Reply with only a JSON array like:
-[{"title":"Get bike pollution check done","bandwidth":"weekend","due":"2026-10-10","priority":"Medium","effort_min":45,"category":"Vehicle","person":null,"why":"Needs a trip to the PUC centre"}]
+Reply with only one JSON object:
+{"missions":[{"title":"File ITR","goal":"File FY25-26 return before 31-Jul","target":"2026-07-31"}],
+ "tasks":[{"title":"Collect Form 16 from HR","mission":"File ITR","bandwidth":"work","due":null,"time":null,"priority":"Medium","effort_min":15,"category":"Finance","person":null,"why":"HR is reachable during office hours"}],
+ "ideas":[{"title":"Gold vs silver: no one remembers who came second","note":"Being first matters more than being close."}]}
+Use empty arrays when there is nothing of a type.
 
 Note:
 """

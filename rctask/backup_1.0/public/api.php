@@ -3,14 +3,12 @@ declare(strict_types=1);
 
 /**
  * JSON API used by assets/app.js.
- *   GET  api.php?a=bootstrap         -> {entries, missions, bandwidths, ai, version}
- *   GET  api.php?a=entries           -> {entries, missions}
- *   POST api.php?a=entry_save        body: task|idea    -> {entry}
- *   POST api.php?a=entry_delete      body: {id}         -> {ok}
- *   POST api.php?a=mission_save      body: mission      -> {mission}
- *   POST api.php?a=mission_delete    body: {id}         -> {ok}
- *   POST api.php?a=bandwidths_save   body: {list}       -> {bandwidths}
- *   POST api.php?a=parse             body: {text}       -> {ok, missions, tasks, ideas} | {ok:false, reason}
+ *   GET  api.php?a=bootstrap         -> {tasks, bandwidths, ai}
+ *   GET  api.php?a=tasks             -> {tasks}
+ *   POST api.php?a=task_save         body: task        -> {task}
+ *   POST api.php?a=task_delete       body: {id}        -> {ok}
+ *   POST api.php?a=bandwidths_save   body: {list}      -> {bandwidths}
+ *   POST api.php?a=parse             body: {text, bandwidths} -> {tasks} | {ok:false, reason}
  * POST calls need the X-CSRF-Token header.
  */
 
@@ -33,29 +31,16 @@ if ($method === 'POST') {
 try {
     switch ("$method $action") {
         case 'GET bootstrap':
-            json_out([
-                'entries'    => Tasks::list($uid),
-                'missions'   => Missions::list($uid),
-                'bandwidths' => Bandwidths::list($uid),
-                'ai'         => Claude::configured(),
-                'version'    => APP_VERSION,
-            ]);
+            json_out(['tasks' => Tasks::list($uid), 'bandwidths' => Bandwidths::list($uid), 'ai' => Claude::configured()]);
 
-        case 'GET entries':
-            json_out(['entries' => Tasks::list($uid), 'missions' => Missions::list($uid)]);
+        case 'GET tasks':
+            json_out(['tasks' => Tasks::list($uid)]);
 
-        case 'POST entry_save':
-            json_out(['entry' => Tasks::save($uid, $body)]);
+        case 'POST task_save':
+            json_out(['task' => Tasks::save($uid, $body)]);
 
-        case 'POST entry_delete':
+        case 'POST task_delete':
             Tasks::delete($uid, (string)($body['id'] ?? ''));
-            json_out(['ok' => true]);
-
-        case 'POST mission_save':
-            json_out(['mission' => Missions::save($uid, $body)]);
-
-        case 'POST mission_delete':
-            Missions::delete($uid, (string)($body['id'] ?? ''));
             json_out(['ok' => true]);
 
         case 'POST bandwidths_save':
@@ -66,7 +51,7 @@ try {
             $text = trim((string)($body['text'] ?? ''));
             if ($text === '') json_out(['error' => 'Text is required.'], 400);
             try {
-                json_out(['ok' => true] + Claude::parse($text, Bandwidths::list($uid), Missions::list($uid)));
+                json_out(['ok' => true, 'tasks' => Claude::parseTasks($text, Bandwidths::list($uid))]);
             } catch (RuntimeException $e) {
                 error_log('parse failed: ' . $e->getMessage());
                 json_out(['ok' => false, 'reason' => 'claude_error']);

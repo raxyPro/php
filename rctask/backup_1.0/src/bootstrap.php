@@ -6,9 +6,6 @@ declare(strict_types=1);
  */
 
 const APP_ROOT = __DIR__ . '/..';
-const APP_NAME = 'rcexe';
-const APP_VERSION = '1.1';
-const APP_TAGLINE = 'rc execute: missions, tasks and ideas';
 
 $configFile = APP_ROOT . '/config.php';
 if (!is_file($configFile)) {
@@ -31,7 +28,6 @@ session_start();
 
 require_once __DIR__ . '/Bandwidths.php';
 require_once __DIR__ . '/Tasks.php';
-require_once __DIR__ . '/Missions.php';
 require_once __DIR__ . '/Sanitizer.php';
 require_once __DIR__ . '/Claude.php';
 

@@ -1,14 +1,14 @@
-/* rcexe service worker.
+/* rctask service worker.
  * - App files (CSS, JS, icons): cache first, refreshed in the background.
  * - Pages: network first; offline shows the last loaded app page, else offline.html.
  * - api.php GET: network first, falls back to the last copy (read-only offline).
  * - api.php POST (saves, deletes, AI parse): always network, never cached.
  * Bump VERSION whenever you change app.js / app.css so phones pick up the update.
  */
-const VERSION = 'rcexe-v1.1';
+const VERSION = 'rctask-v2';
 const SHELL = [
-  'assets/app.css?v=1.1',
-  'assets/app.js?v=1.1',
+  'assets/app.css?v=2',
+  'assets/app.js?v=2',
   'assets/icon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',
@@ -54,7 +54,7 @@ self.addEventListener('fetch', (e) => {
   const file = url.pathname.split('/').pop();
 
   // Sign-in pages are never cached
-  if (['login.php', 'register.php', 'logout.php', 'about.php'].includes(file)) return;
+  if (['login.php', 'register.php', 'logout.php'].includes(file)) return;
 
   // API reads: network first, last copy when offline
   if (file === 'api.php') {

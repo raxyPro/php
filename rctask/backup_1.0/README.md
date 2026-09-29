@@ -1,6 +1,4 @@
-# rcexe (rc execute) — missions, tasks and ideas (PHP + MySQL)
-
-**Upgrading from 1.0?** Back up the database, then run `sql/migrate_1.0_to_1.1.sql` once on each database (local and production). Fresh install: `sql/schema.sql`.
+# rctask — task manager (PHP + MySQL)
 
 See FEATURES.md for a full description of what the app does today.
 

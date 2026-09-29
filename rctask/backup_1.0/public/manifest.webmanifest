@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "rcexe",
-  "short_name": "rcexe",
-  "description": "rc execute: missions, tasks and ideas from plain text",
+  "name": "rctask",
+  "short_name": "rctask",
+  "description": "Task manager: type what needs doing, get it organised",
   "start_url": "./index.php",
   "scope": "./",
   "display": "standalone",

@@ -37,8 +37,8 @@ $title = 'Sign in';
 require __DIR__ . '/../src/auth_layout.php';
 ?>
 <form class="login" method="post" autocomplete="on">
-  <h1><?= APP_NAME ?><?= env_badge() ?></h1>
-  <p class="muted">rc execute — missions, tasks and ideas. <a href="about.php">About</a></p>
+  <h1>rcfamily<?= env_badge() ?></h1>
+  <p class="muted">Sign in to your tasks.</p>
   <?php if ($error): ?><p class="err"><?= h($error) ?></p><?php endif; ?>
   <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">
   <label for="email">Email</label>

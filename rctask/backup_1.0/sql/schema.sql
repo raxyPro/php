@@ -1,8 +1,9 @@
--- rcexe schema v1.1 (MySQL 8+ / MariaDB 10.4+)
--- FRESH INSTALL ONLY. Tables only - create the database yourself first:
+-- rctask schema (MySQL 8+ / MariaDB 10.4+)
+-- Tables only. Create the database yourself first, e.g.:
 --   CREATE DATABASE rctask CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- then run this file against it:
 --   mysql -u root -p rctask < sql/schema.sql
--- Upgrading an existing 1.0 database? Run sql/migrate_1.0_to_1.1.sql instead.
+-- (or phpMyAdmin: select the rctask database -> Import -> sql/schema.sql)
 
 CREATE TABLE IF NOT EXISTS users (
   id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -12,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- A slot of the week when a task can realistically be done (per user)
+-- A slot of the week when a task can realistically be done
 CREATE TABLE IF NOT EXISTS bandwidths (
   user_id         INT UNSIGNED NOT NULL,
   id              VARCHAR(40) NOT NULL,
@@ -28,36 +29,17 @@ CREATE TABLE IF NOT EXISTS bandwidths (
   CONSTRAINT fk_bw_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Short-term mission (small project), e.g. "File ITR", "Buy EV"
-CREATE TABLE IF NOT EXISTS missions (
-  id            CHAR(36) NOT NULL PRIMARY KEY,
-  user_id       INT UNSIGNED NOT NULL,
-  title         VARCHAR(200) NOT NULL,
-  goal          VARCHAR(1000) NULL,
-  target_date   DATE NULL,
-  status        ENUM('Active','Completed','Cancelled') NOT NULL DEFAULT 'Active',
-  hue           VARCHAR(12) NOT NULL DEFAULT 'blue',
-  sort_order    INT NOT NULL DEFAULT 0,
-  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  completed_at  DATETIME NULL,
-  KEY idx_mission_user (user_id, status),
-  CONSTRAINT fk_mission_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Tasks and ideas (events/expenses reserved for later)
+-- Tasks now; events and expenses later share this table
 CREATE TABLE IF NOT EXISTS entries (
   id            CHAR(36) NOT NULL PRIMARY KEY,
   user_id       INT UNSIGNED NOT NULL,
-  kind          ENUM('task','idea','event','expense') NOT NULL,
+  kind          ENUM('task','event','expense') NOT NULL,
   event_type    ENUM('event','planned_event') NULL,
-  mission_id    CHAR(36) NULL,
   title         VARCHAR(300) NOT NULL,
   bandwidth_id  VARCHAR(40) NULL,
-  status        ENUM('New','Progress','Completed','Cancelled') NOT NULL DEFAULT 'New',
+  status        ENUM('To do','In progress','Waiting','Done') NOT NULL DEFAULT 'To do',
   priority      ENUM('High','Medium','Low') NOT NULL DEFAULT 'Medium',
   due_date      DATE NULL,
-  due_time      TIME NULL,
   event_date    DATE NULL,
   planned_due   DATE NULL,
   effort_min    INT NULL,
@@ -66,9 +48,7 @@ CREATE TABLE IF NOT EXISTS entries (
   category      VARCHAR(40) NULL,
   person        VARCHAR(80) NULL,
   remark        VARCHAR(500) NULL,
-  progress_html MEDIUMTEXT NULL,          -- task: progress (rich text)
-  remark_html   MEDIUMTEXT NULL,          -- task: remark (rich text)
-  notes_html    MEDIUMTEXT NULL,          -- idea: the idea itself (rich text)
+  notes_html    MEDIUMTEXT NULL,
   why           VARCHAR(200) NULL,
   source_text   TEXT NULL,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -76,7 +56,5 @@ CREATE TABLE IF NOT EXISTS entries (
   completed_at  DATETIME NULL,
   KEY idx_user_kind (user_id, kind, status),
   KEY idx_user_due (user_id, due_date),
-  KEY idx_mission (mission_id),
-  CONSTRAINT fk_entry_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_entry_mission FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE SET NULL
+  CONSTRAINT fk_entry_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -39,7 +39,7 @@ $title = 'Create account';
 require __DIR__ . '/../src/auth_layout.php';
 ?>
 <form class="login" method="post">
-  <h1><?= APP_NAME ?><?= env_badge() ?></h1>
+  <h1>rcfamily<?= env_badge() ?></h1>
   <p class="muted">Create your account.</p>
   <?php if ($error): ?><p class="err"><?= h($error) ?></p><?php endif; ?>
   <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">
