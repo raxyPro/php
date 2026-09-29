@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProjectDesk – Dashboard Prototype</title>
+<style>
+:root{--pg:#31752F;--pgd:#255a24;--pgl:#eef4ed;--line:#d6d6d6;--hdr:#f3f3f3;--txt:#222;--mut:#666;--red:#c62828;--blue:#2e6ca4;--amb:#c48b1f}
+*{box-sizing:border-box}
+body{margin:0;font:12.5px "Segoe UI",system-ui,-apple-system,sans-serif;color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#fafafa}
+button,select,input,textarea{font:inherit}
+.title{background:var(--pg);color:#fff;height:32px;display:flex;align-items:center;padding:0 12px;gap:10px;flex:none}
+.title .app{font-weight:600;font-size:13px}
+.title .doc{flex:1;text-align:center;opacity:.9}
+.title select{background:var(--pgd);color:#fff;border:1px solid #5d9b5b;padding:2px 4px}
+.tabs{background:var(--pg);display:flex;padding-left:4px;height:26px;align-items:flex-end;flex:none}
+.tab{color:#fff;padding:4px 14px;text-transform:uppercase;font-size:11px;letter-spacing:.3px;cursor:default}
+.tab.file{background:var(--pgd);margin-right:4px}
+.tab.on{background:var(--hdr);color:var(--pg);font-weight:600}
+.ribbon{background:var(--hdr);border-bottom:1px solid var(--line);display:flex;height:84px;padding:4px 2px 0;flex:none}
+.grp{display:flex;flex-direction:column;border-right:1px solid #dcdcdc;padding:0 6px}
+.grp .btns{display:flex;gap:2px;flex:1}
+.grp .gl{font-size:10.5px;color:var(--mut);text-align:center;padding:2px 0}
+.bL{display:flex;flex-direction:column;align-items:center;width:64px;padding:3px 2px;height:60px;border:1px solid transparent;background:none;cursor:pointer;color:#333;border-radius:2px}
+.bL .i{font-size:21px;line-height:28px;color:var(--pg)}
+.bL span:last-child{font-size:11px;line-height:1.15}
+.bL:hover{background:#dbe9d9;border-color:#b5d1b2}
+.bL:disabled{opacity:.35;cursor:not-allowed;background:none;border-color:transparent}
+.main{flex:1;display:flex;min-height:0}
+.vstrip{width:22px;background:var(--pg);color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:10px 0;flex:none}
+/* summary strip */
+.wrap{flex:1;display:flex;flex-direction:column;min-width:0}
+.kpis{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff;flex-wrap:wrap}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--pg);padding:6px 12px;min-width:120px;background:#fff}
+.kpi .n{font-size:20px;font-weight:600;line-height:1.1}
+.kpi .l{color:var(--mut);font-size:11px}
+.kpi.red{border-left-color:var(--red)}.kpi.red .n{color:var(--red)}
+.kpi.blue{border-left-color:var(--blue)}.kpi.amb{border-left-color:var(--amb)}
+.hello{margin-left:auto;align-self:center;text-align:right;color:var(--mut)}
+.hello b{color:var(--txt);font-size:13px}
+/* split */
+.split{flex:1;display:flex;min-height:0}
+.left{width:42%;min-width:340px;display:flex;flex-direction:column;border-right:3px double #bbb}
+.right{flex:1;display:flex;flex-direction:column;min-width:0}
+.ph{background:var(--hdr);border-bottom:1px solid var(--line);padding:0 12px;height:34px;display:flex;align-items:center;gap:8px;flex:none}
+.ph h2{margin:0;font-size:12.5px;font-weight:600;color:var(--pg);text-transform:uppercase;letter-spacing:.3px}
+.ph .sp{flex:1}
+.ph select,.ph input{border:1px solid #bbb;height:22px;padding:1px 4px}
+.scroll{flex:1;overflow:auto;padding:10px 12px}
+/* project cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.pc{background:#fff;border:1px solid var(--line);border-top:3px solid var(--pg);cursor:pointer;display:flex;flex-direction:column}
+.pc:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.pc.on{outline:2px solid var(--blue);outline-offset:-1px}
+.pc.risk{border-top-color:var(--red)}.pc.watch{border-top-color:var(--amb)}
+.pc .top{padding:8px 10px 4px}
+.pc .nm{font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+.pc .nm .ed{margin-left:auto;color:var(--mut);font-weight:400;padding:0 4px;border:none;background:none;cursor:pointer}
+.pc .nm .ed:hover{color:var(--pg)}
+.pc .meta{color:var(--mut);font-size:11px;margin-top:2px}
+.pc .goal{color:#444;font-size:11.5px;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pc .stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #eee;margin-top:6px}
+.pc .stats div{text-align:center;padding:5px 0;border-right:1px solid #eee}
+.pc .stats div:last-child{border-right:none}
+.pc .stats b{display:block;font-size:16px}
+.pc .stats span{font-size:10.5px;color:var(--mut)}
+.pc .prog{height:5px;background:#eee}
+.pc .prog i{display:block;height:100%;background:var(--pg)}
+.rag{display:inline-block;width:9px;height:9px;border-radius:50%}
+/* task list */
+.vt{display:flex;gap:0;border:1px solid #bbb;border-radius:2px;overflow:hidden}
+.vt button{border:none;background:#fff;padding:3px 12px;cursor:pointer;border-right:1px solid #bbb}
+.vt button:last-child{border-right:none}
+.vt button.on{background:var(--pg);color:#fff}
+.vt button .c{display:inline-block;min-width:16px;padding:0 4px;margin-left:4px;border-radius:8px;background:#e7e7e7;color:#333;font-size:10.5px}
+.vt button.on .c{background:#fff;color:var(--pg)}
+.chip{background:#dbeafc;color:#1a5fa8;padding:2px 8px;border-radius:10px;font-size:11px}
+.chip b{cursor:pointer;margin-left:4px}
+table.g{border-collapse:collapse;width:100%;background:#fff}
+.g th{position:sticky;top:0;background:var(--hdr);border:1px solid var(--line);font-weight:600;padding:5px 7px;text-align:left;white-space:nowrap;z-index:1}
+.g td{border:1px solid #ececec;padding:4px 7px;vertical-align:middle}
+.g tr:hover td{background:#f5f9fd}
+.g tr.gh td{background:var(--pgl);font-weight:700;color:var(--pg);border-color:#dfe9de}
+.g td.id{color:var(--mut);background:var(--hdr);text-align:right;width:30px}
+.g .tn{font-weight:600;cursor:pointer}
+.g .tn:hover{color:var(--blue);text-decoration:underline}
+.g .pj{font-size:11px;color:var(--mut)}
+.g select{border:1px solid #ccc;height:22px;padding:0 2px}
+.g select.ns{background:#f1f1f1}.g select.ip{background:#dbeafc}.g select.oh{background:#fdf0d5}.g select.c{background:#dcefdc}
+.late{color:var(--red);font-weight:700}
+.today-t{color:var(--blue);font-weight:700}
+.rm{color:#555;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{padding:30px;text-align:center;color:var(--mut);background:#fff;border:1px dashed #ccc}
+.status{height:22px;background:var(--hdr);border-top:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 10px;color:var(--mut);font-size:11px;flex:none}
+/* modal */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:50}
+.mask.on{display:flex}
+.dlg{background:#fff;width:560px;max-width:94vw;border:1px solid #999;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.dlg .dh{background:var(--pg);color:#fff;padding:7px 12px;font-weight:600;display:flex;justify-content:space-between}
+.dlg .dh span{cursor:pointer}
+.dlg .db{padding:14px;display:grid;grid-template-columns:100px 1fr 100px 1fr;gap:8px 10px;align-items:center}
+.dlg .full{grid-column:2/5}
+.dlg input,.dlg select,.dlg textarea{border:1px solid #bbb;padding:3px 5px;width:100%}
+.dlg textarea{height:54px;resize:vertical}
+.dlg .df{padding:10px 14px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--hdr)}
+.btn{border:1px solid #aaa;background:#fff;padding:4px 16px;cursor:pointer}
+.btn.pri{background:var(--pg);color:#fff;border-color:var(--pgd)}
+.note{grid-column:1/5;color:#8a5a00;background:#fdf6e3;padding:5px 8px;border:1px solid #f0dca8}
+.muted{color:var(--mut)}
+.page{flex:1;overflow:auto;padding:14px 16px}
+.proto{position:fixed;right:10px;bottom:28px;background:#fff8d6;border:1px solid #e5d27a;padding:4px 10px;font-size:11px;z-index:40}
+@media(max-width:900px){.split{flex-direction:column}.left{width:100%;min-width:0;border-right:none;border-bottom:3px double #bbb;max-height:45%}.ribbon{overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="title">
+  <span class="app">ProjectDesk</span><span class="doc" id="doc">Dashboard</span>
+  <span>Signed in as</span><select id="me" onchange="S.me=+this.value;S.proj=null;render()"></select>
+</div>
+<div class="tabs"><div class="tab file">File</div><div class="tab on">Home</div><div class="tab">Report</div><div class="tab">View</div></div>
+<div class="ribbon" id="ribbon"></div>
+<div class="main"><div class="vstrip" id="vstrip">Dashboard</div><div class="wrap" id="wrap"></div></div>
+<div class="status" id="sb"></div>
+<div class="mask" id="mask"><div class="dlg" id="dlg"></div></div>
+<div class="proto">Prototype · data resets on reload</div>
+
+<script>
+/* ---------- helpers ---------- */
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const iso=d=>{d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const addD=n=>{const d=new Date(TODAY);d.setDate(d.getDate()+n);return iso(d)};
+const P=s=>new Date(s+'T00:00:00');
+const fmt=s=>s?P(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}):'';
+const dd=(a,b)=>Math.round((P(b)-P(a))/864e5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TD=iso(TODAY);
+// next week = the coming Mon–Sun
+const nwStart=(()=>{const d=new Date(TODAY);d.setDate(d.getDate()+((8-d.getDay())%7||7));return iso(d)})();
+const nwEnd=(()=>{const d=P(nwStart);d.setDate(d.getDate()+6);return iso(d)})();
+const STAT=['Not Started','In Progress','On Hold','Completed'],SC={'Not Started':'ns','In Progress':'ip','On Hold':'oh','Completed':'c'};
+
+/* ---------- seed data ---------- */
+let users=[
+ {id:1,name:'Ramu Singh',email:'ramu@rcpro.in',role:'Admin'},
+ {id:2,name:'Priya Sharma',email:'priya@example.com',role:'User'},
+ {id:3,name:'Arjun Mehta',email:'arjun@example.com',role:'User'},
+ {id:4,name:'Neha Kapoor',email:'neha@example.com',role:'User'},
+ {id:5,name:'Vikram Rao',email:'vikram@example.com',role:'User'}];
+let projects=[
+ {id:1,name:'Client Portal Revamp',goal:'Self-service client portal; onboarding from 5 days to 1 day by Q4.',owner:1,start:addD(-21),target:addD(40)},
+ {id:2,name:'Algo Trading Engine v2',goal:'Automated options execution with hard risk limits and daily P&L.',owner:3,start:addD(-12),target:addD(55)},
+ {id:3,name:'Noida Office Setup',goal:'Office ready for 10 people with network and IT equipment.',owner:4,start:addD(-30),target:addD(9)},
+ {id:4,name:'Q4 Marketing Campaign',goal:'Generate 300 qualified leads through LinkedIn and webinars.',owner:2,start:addD(-5),target:addD(70)}];
+let tasks=[],TID=1;
+const T=(p,n,t,o,e,s,r)=>tasks.push({id:TID++,projectId:p,name:n,target:addD(t),owner:o,effort:e,status:s,remark:r||''});
+T(1,'Stakeholder workshops',-14,2,16,'Completed','Signed off');
+T(1,'UI wireframes',-5,4,24,'Completed','Figma link shared');
+T(1,'Login & KYC module',0,3,40,'In Progress','API from vendor pending');
+T(1,'Notifications service',-1,5,32,'In Progress','Delayed – SMTP access');
+T(1,'Dashboard screens',nD(3),4,48,'Not Started');
+T(1,'UAT with business',35,2,24,'Not Started');
+T(1,'Production cut-over',40,1,16,'Not Started');
+T(2,'Port short-strangle logic',-2,3,30,'Completed');
+T(2,'Iron-condor adjustments',0,5,30,'In Progress');
+T(2,'Backtest 2 years data',nD(1),1,20,'Not Started');
+T(2,'Max-loss kill switch',nD(4),5,24,'Not Started');
+T(2,'Margin monitor',40,3,36,'Not Started');
+T(2,'Broker API certification',-3,1,12,'On Hold','Waiting for sandbox keys');
+T(3,'Furniture order',-15,4,8,'Completed');
+T(3,'Workstation installation',-2,5,24,'In Progress','Vendor short-staffed');
+T(3,'Network & Wi-Fi',0,5,20,'In Progress');
+T(3,'Laptops & accessories',nD(2),2,12,'Not Started');
+T(4,'Campaign brief',0,2,6,'In Progress');
+T(4,'Webinar landing page',nD(0),4,16,'Not Started');
+T(4,'LinkedIn ad creatives',nD(3),2,12,'Not Started');
+T(4,'Lead scoring sheet',20,1,8,'Not Started');
+function nD(i){return dd(TD,nwStart)+i} // i-th day of next week
+let UID=6,PID=5;
+
+/* ---------- state & access ---------- */
+const S={me:1,proj:null,view:'today',q:'',page:'dash'};
+const me=()=>users.find(u=>u.id===S.me);
+const admin=()=>me().role==='Admin';
+const uname=id=>(users.find(u=>u.id===id)||{}).name||'—';
+const late=t=>t.status!=='Completed'&&t.target<TD;
+// Admin sees everything; a user sees only projects where he has a task, and only his tasks
+const myTasks=()=>admin()?tasks:tasks.filter(t=>t.owner===S.me);
+const myProjects=()=>admin()?projects:projects.filter(p=>tasks.some(t=>t.projectId===p.id&&t.owner===S.me));
+function stats(list){const done=list.filter(t=>t.status==='Completed').length;
+ return{total:list.length,done,due:list.length-done,late:list.filter(late).length,pct:list.length?Math.round(done*100/list.length):0}}
+
+/* ---------- ribbon ---------- */
+function ribbon(){const a=admin();
+ const G=(g,b)=>`<div class="grp"><div class="btns">${b.map(([i,l,f,dis])=>`<button class="bL" onclick="${f}" ${dis?'disabled':''} title="${dis?'Admin only':''}"><span class="i">${i}</span><span>${l}</span></button>`).join('')}</div><div class="gl">${g}</div></div>`;
+ document.getElementById('ribbon').innerHTML=
+  G('View',[['▦','Dashboard',"page('dash')"],['☺','Users',"page('users')",!a]])+
+  G('Project',[['＋','New Project','openProject()',!a],['✎','Edit Project','editSelProject()',!a]])+
+  G('Task',[['＋','New Task','openTask()',!a]])+
+  G('Show',[['◷','Today',"setView('today')"],['▤','Next Week',"setView('week')"],['☷','All Tasks',"setView('all')"]])+
+  G('Export',[['⭳','Export CSV','exportCSV()']]);
+}
+function page(p){S.page=p;render()}
+function setView(v){S.view=v;S.page='dash';render()}
+
+/* ---------- render ---------- */
+function render(){
+ document.getElementById('me').innerHTML=users.map(u=>`<option value="${u.id}" ${u.id===S.me?'selected':''}>${esc(u.name)} (${u.role})</option>`).join('');
+ ribbon();
+ document.getElementById('vstrip').textContent=S.page==='users'?'Users':'Dashboard';
+ document.getElementById('doc').textContent=(S.page==='users'?'Users':'Dashboard')+' — ProjectDesk';
+ document.getElementById('wrap').innerHTML=S.page==='users'?usersPage():dash();
+ const st=stats(myTasks());
+ document.getElementById('sb').innerHTML=`<span>Ready</span><span>${admin()?'Admin – full view':'User – my projects & tasks only'}</span><span>Projects: ${myProjects().length}</span><span>Tasks: ${st.total}</span><span style="color:#c62828">Overdue: ${st.late}</span><span style="margin-left:auto">Today: ${fmt(TD)}</span>`;
+}
+
+function dash(){
+ const mt=myTasks(),mp=myProjects(),st=stats(mt);
+ const todayN=mt.filter(t=>t.status!=='Completed'&&t.target<=TD).length;
+ const weekN=mt.filter(t=>t.status!=='Completed'&&t.target>=nwStart&&t.target<=nwEnd).length;
+ let h=`<div class="kpis">
+  <div class="kpi"><div class="n">${mp.length}</div><div class="l">Projects</div></div>
+  <div class="kpi"><div class="n">${st.total}</div><div class="l">Total tasks</div></div>
+  <div class="kpi"><div class="n">${st.done}</div><div class="l">Completed</div></div>
+  <div class="kpi blue"><div class="n">${st.due}</div><div class="l">Due (open)</div></div>
+  <div class="kpi amb"><div class="n">${todayN}</div><div class="l">Today's work</div></div>
+  <div class="kpi red"><div class="n">${st.late}</div><div class="l">Overdue</div></div>
+  <div class="hello"><b>${esc(me().name)}</b><br>${admin()?'Admin · all projects & tasks':'Showing projects & tasks assigned to you'}</div></div>
+ <div class="split"><div class="left">
+  <div class="ph"><h2>Projects</h2><span class="muted">(${mp.length})</span><span class="sp"></span>${S.proj?`<span class="chip">Filtered<b onclick="S.proj=null;render()">✕</b></span>`:'<span class="muted">Click a card to filter tasks</span>'}</div>
+  <div class="scroll"><div class="cards">`;
+ mp.forEach(p=>{const pt=mt.filter(t=>t.projectId===p.id),s=stats(pt),left=dd(TD,p.target);
+  const risk=s.late>=2||(left<14&&s.pct<60)?'risk':s.late?'watch':'';
+  const rc=risk==='risk'?'#c62828':risk==='watch'?'#c48b1f':'#4b8a49';
+  h+=`<div class="pc ${risk} ${S.proj===p.id?'on':''}" onclick="S.proj=S.proj===${p.id}?null:${p.id};render()">
+   <div class="top"><div class="nm"><span class="rag" style="background:${rc}" title="${risk||'on track'}"></span>${esc(p.name)}${admin()?`<button class="ed" title="Edit project" onclick="event.stopPropagation();openProject(${p.id})">✎</button>`:''}</div>
+   <div class="meta">Start ${fmt(p.start)} · Target ${fmt(p.target)} <span class="${left<0?'late':''}">(${left>=0?left+'d left':-left+'d late'})</span> · ${esc(uname(p.owner))}</div>
+   <div class="goal">${esc(p.goal)}</div></div>
+   <div class="stats"><div><b>${s.total}</b><span>Total</span></div><div><b style="color:#4b8a49">${s.done}</b><span>Completed</span></div><div><b style="color:#2e6ca4">${s.due}</b><span>Due</span></div><div><b class="${s.late?'late':''}">${s.late}</b><span>Overdue</span></div></div>
+   <div class="prog" title="${s.pct}% complete"><i style="width:${s.pct}%"></i></div></div>`});
+ if(!mp.length)h+=`<div class="empty">No projects assigned to you yet.</div>`;
+ h+=`</div></div></div><div class="right">${taskPanel(mt)}</div></div>`;
+ return h;
+}
+
+function taskPanel(mt){
+ let base=S.proj?mt.filter(t=>t.projectId===S.proj):mt;
+ const open=base.filter(t=>t.status!=='Completed');
+ const V={today:open.filter(t=>t.target<=TD),week:open.filter(t=>t.target>=nwStart&&t.target<=nwEnd),all:base};
+ let list=V[S.view];
+ if(S.q)list=list.filter(t=>(t.name+' '+t.remark).toLowerCase().includes(S.q.toLowerCase()));
+ const pn=id=>projects.find(p=>p.id===id).name;
+ const sub={today:'Due today + overdue',week:`${fmt(nwStart)} – ${fmt(nwEnd)}`,all:'All tasks'}[S.view];
+ let h=`<div class="ph"><h2>Tasks</h2><div class="vt">
+  <button class="${S.view==='today'?'on':''}" onclick="setView('today')">Today<span class="c">${V.today.length}</span></button>
+  <button class="${S.view==='week'?'on':''}" onclick="setView('week')">Next Week<span class="c">${V.week.length}</span></button>
+  <button class="${S.view==='all'?'on':''}" onclick="setView('all')">All<span class="c">${V.all.length}</span></button></div>
+  <span class="muted">${sub}${S.proj?' · '+esc(pn(S.proj)):''}</span><span class="sp"></span>
+  <input placeholder="Search…" value="${esc(S.q)}" onchange="S.q=this.value;render()"></div><div class="scroll" style="padding:0">`;
+ if(!list.length)return h+`<div class="empty" style="margin:12px">${S.view==='today'?'Nothing due today 🎉':'No tasks in this view.'}</div></div>`;
+ h+=`<table class="g"><thead><tr><th></th><th>Task</th>${admin()?'<th>Owner</th>':''}<th>Target Date</th><th>Effort (h)</th><th>Status</th><th>Remark</th></tr></thead><tbody>`;
+ // group: overdue first for "today", else by project
+ let groups;
+ if(S.view==='today')groups=[['Overdue',list.filter(late)],['Due today',list.filter(t=>t.target===TD)]];
+ else if(S.view==='week'){groups=[];for(let i=0;i<7;i++){const d=P(nwStart);d.setDate(d.getDate()+i);const k=iso(d);groups.push([d.toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short'}),list.filter(t=>t.target===k)])}}
+ else groups=myProjectsIn(list).map(p=>[p.name,list.filter(t=>t.projectId===p.id)]);
+ let n=0;
+ groups.forEach(([g,l])=>{if(!l.length)return;h+=`<tr class="gh"><td colspan="${admin()?7:6}">${esc(g)} (${l.length})</td></tr>`;
+  l.sort((a,b)=>a.target<b.target?-1:1).forEach(t=>{n++;const cls=late(t)?'late':t.target===TD&&t.status!=='Completed'?'today-t':'';
+   h+=`<tr><td class="id">${n}</td><td><div class="tn" onclick="openTask(${t.id})">${esc(t.name)}</div>${S.view!=='all'?`<div class="pj">${esc(pn(t.projectId))}</div>`:''}</td>
+   ${admin()?`<td>${esc(uname(t.owner))}</td>`:''}<td class="${cls}">${fmt(t.target)}${late(t)?` <span style="font-weight:400">(${dd(t.target,TD)}d late)</span>`:''}</td><td>${t.effort}</td>
+   <td><select class="${SC[t.status]}" onchange="setStatus(${t.id},this.value)">${STAT.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+   <td class="rm" title="${esc(t.remark)}">${esc(t.remark)||'<span class="muted">—</span>'}</td></tr>`})});
+ return h+'</tbody></table></div>';
+}
+function myProjectsIn(list){return projects.filter(p=>list.some(t=>t.projectId===p.id))}
+function setStatus(id,v){tasks.find(t=>t.id===id).status=v;render()}
+
+/* ---------- users page ---------- */
+function usersPage(){
+ if(!admin())return'<div class="page"><div class="empty">Only Admins can manage users.</div></div>';
+ let h=`<div class="page"><div style="display:flex;align-items:center;margin-bottom:10px"><h2 style="margin:0;color:var(--pg);font-weight:600">Users</h2><button class="btn pri" style="margin-left:auto" onclick="openUser()">＋ Add User</button></div>
+ <table class="g"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Projects</th><th>Open tasks</th><th>Overdue</th><th></th></tr></thead><tbody>`;
+ users.forEach(u=>{const ut=tasks.filter(t=>t.owner===u.id);
+  h+=`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.role}</td><td>${new Set(ut.map(t=>t.projectId)).size}</td><td>${ut.filter(t=>t.status!=='Completed').length}</td><td class="${ut.some(late)?'late':''}">${ut.filter(late).length}</td><td><button class="btn" onclick="openUser(${u.id})">Edit</button></td></tr>`});
+ return h+'</tbody></table></div>';
+}
+
+/* ---------- dialogs ---------- */
+function dlg(t,b,f){document.getElementById('dlg').innerHTML=`<div class="dh">${t}<span onclick="closeD()">✕</span></div><div class="db">${b}</div><div class="df">${f}</div>`;document.getElementById('mask').classList.add('on')}
+function closeD(){document.getElementById('mask').classList.remove('on')}
+const v=id=>document.getElementById(id).value;
+const uo=sel=>users.map(u=>`<option value="${u.id}" ${u.id===sel?'selected':''}>${esc(u.name)}</option>`).join('');
+
+function openTask(id){
+ const t=id?tasks.find(x=>x.id===id):{projectId:S.proj||projects[0].id,name:'',target:addD(7),owner:S.me,effort:8,status:'Not Started',remark:''};
+ const a=admin(),dis=a?'':'disabled';
+ dlg(id?'Task Information':'New Task',`
+  ${a?'':'<div class="note">You can update Status and Remark. Other fields are set by the Admin.</div>'}
+  <label>Project</label><select id="f_p" class="full" ${dis}>${projects.map(p=>`<option value="${p.id}" ${p.id===t.projectId?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+  <label>Task name</label><input id="f_n" class="full" value="${esc(t.name)}" ${dis}>
+  <label>Owner</label><select id="f_o" ${dis}>${uo(t.owner)}</select>
+  <label>Target date</label><input id="f_t" type="date" value="${t.target}" ${dis}>
+  <label>Effort (h)</label><input id="f_e" type="number" min="0" value="${t.effort}" ${dis}>
+  <label>Status</label><select id="f_s">${STAT.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}</select>
+  <label>Remark</label><textarea id="f_r" class="full">${esc(t.remark)}</textarea>`,
+  `${id&&a?`<button class="btn" style="margin-right:auto" onclick="delTask(${id})">Delete</button>`:''}<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveTask(${id||0})">OK</button>`)}
+function saveTask(id){const d={projectId:+v('f_p'),name:v('f_n').trim(),owner:+v('f_o'),target:v('f_t'),effort:+v('f_e')||0,status:v('f_s'),remark:v('f_r')};
+ if(!d.name)return alert('Task name is required');
+ if(id){const t=tasks.find(x=>x.id===id);if(admin())Object.assign(t,d);else{t.status=d.status;t.remark=d.remark}}
+ else tasks.push({id:TID++,...d});closeD();render()}
+function delTask(id){if(!confirm('Delete this task?'))return;tasks=tasks.filter(t=>t.id!==id);closeD();render()}
+
+function editSelProject(){if(!S.proj)return alert('Click a project card first.');openProject(S.proj)}
+function openProject(id){
+ const p=id?projects.find(x=>x.id===id):{name:'',goal:'',owner:S.me,start:TD,target:addD(60)};
+ dlg(id?'Project Information':'New Project',`
+  <label>Project name</label><input id="f_n" class="full" value="${esc(p.name)}">
+  <label>Goal</label><textarea id="f_g" class="full">${esc(p.goal)}</textarea>
+  <label>Owner</label><select id="f_o" class="full">${uo(p.owner)}</select>
+  <label>Start date</label><input id="f_s" type="date" value="${p.start}">
+  <label>Target date</label><input id="f_t" type="date" value="${p.target}">`,
+  `${id?`<button class="btn" style="margin-right:auto" onclick="delProject(${id})">Delete</button>`:''}<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveProject(${id||0})">OK</button>`)}
+function saveProject(id){const d={name:v('f_n').trim(),goal:v('f_g'),owner:+v('f_o'),start:v('f_s'),target:v('f_t')};
+ if(!d.name)return alert('Project name is required');
+ if(id)Object.assign(projects.find(p=>p.id===id),d);else projects.push({id:PID++,...d});closeD();render()}
+function delProject(id){if(!confirm('Delete this project and all its tasks?'))return;projects=projects.filter(p=>p.id!==id);tasks=tasks.filter(t=>t.projectId!==id);S.proj=null;closeD();render()}
+
+function openUser(id){const u=id?users.find(x=>x.id===id):{name:'',email:'',role:'User'};
+ dlg(id?'Edit User':'Add User',`<label>Full name</label><input id="f_n" class="full" value="${esc(u.name)}">
+  <label>Email</label><input id="f_m" class="full" value="${esc(u.email)}">
+  <label>Role</label><select id="f_r" class="full"><option ${u.role==='User'?'selected':''}>User</option><option ${u.role==='Admin'?'selected':''}>Admin</option></select>
+  <div class="note">Admin: sees & manages all projects, tasks and users. User: sees only projects where he has tasks, and only his own tasks.</div>`,
+  `<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveUser(${id||0})">OK</button>`)}
+function saveUser(id){const d={name:v('f_n').trim(),email:v('f_m').trim(),role:v('f_r')};if(!d.name||!d.email)return alert('Name and email are required');
+ if(id){if(id===S.me&&d.role!=='Admin'&&!users.some(u=>u.id!==id&&u.role==='Admin'))return alert('At least one Admin is required.');Object.assign(users.find(u=>u.id===id),d)}
+ else users.push({id:UID++,...d});closeD();render()}
+
+function exportCSV(){const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+ const r=[['Project','Task','Owner','Target Date','Effort (h)','Status','Overdue','Remark']];
+ myTasks().forEach(t=>r.push([projects.find(p=>p.id===t.projectId).name,t.name,uname(t.owner),t.target,t.effort,t.status,late(t)?'Yes':'No',t.remark]));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([r.map(x=>x.map(q).join(',')).join('\n')],{type:'text/csv'}));a.download='projectdesk_tasks.csv';a.click()}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD()});
+render();
+</script>
+</body>
+</html>

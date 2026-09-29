@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
-if (empty($CONFIG['allow_register'])) {
+if (!registration_open()) {
     http_response_code(403);
     exit('Sign-ups are closed. Set allow_register to true in config.php to add an account.');
 }
@@ -39,7 +39,7 @@ $title = 'Create account';
 require __DIR__ . '/../src/auth_layout.php';
 ?>
 <form class="login" method="post">
-  <h1>rcfamily</h1>
+  <h1>rcfamily<?= env_badge() ?></h1>
   <p class="muted">Create your account.</p>
   <?php if ($error): ?><p class="err"><?= h($error) ?></p><?php endif; ?>
   <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">

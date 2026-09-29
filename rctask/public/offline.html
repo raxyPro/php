@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1F5F8B">
+  <title>Offline · rctask</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 16px/1.5 system-ui, sans-serif; background: #F1F3F4; color: #1d2327; }
+    @media (prefers-color-scheme: dark) { body { background: #15191c; color: #e6e9eb; } }
+    .box { text-align: center; padding: 24px; max-width: 360px; }
+    img { width: 72px; height: 72px; }
+    button { margin-top: 12px; padding: 10px 20px; border: 0; border-radius: 8px; background: #1F5F8B; color: #fff; font: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <img src="assets/icon-192.png" alt="">
+    <h1>You're offline</h1>
+    <p>rctask needs a connection to open for the first time. Connect and try again.</p>
+    <button type="button" onclick="location.href='index.php'">Try again</button>
+  </div>
+</body>
+</html>

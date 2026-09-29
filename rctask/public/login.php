@@ -28,11 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 $hasUsers = (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0;
+// First run: no accounts yet, go straight to sign-up
+if (!$hasUsers && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: register.php');
+    exit;
+}
 $title = 'Sign in';
 require __DIR__ . '/../src/auth_layout.php';
 ?>
 <form class="login" method="post" autocomplete="on">
-  <h1>rcfamily</h1>
+  <h1>rcfamily<?= env_badge() ?></h1>
   <p class="muted">Sign in to your tasks.</p>
   <?php if ($error): ?><p class="err"><?= h($error) ?></p><?php endif; ?>
   <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">
@@ -41,7 +46,7 @@ require __DIR__ . '/../src/auth_layout.php';
   <label for="password">Password</label>
   <input id="password" name="password" type="password" required>
   <button class="btn primary" type="submit">Sign in</button>
-  <?php if (!empty($CONFIG['allow_register'])): ?>
+  <?php if (registration_open()): ?>
     <p class="muted small"><?= $hasUsers ? 'New here?' : 'No account yet.' ?> <a href="register.php">Create an account</a></p>
   <?php endif; ?>
 </form>

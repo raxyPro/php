@@ -6,9 +6,9 @@ return [
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,
-        'name' => 'rcfamily',
-        'user' => 'root',
-        'pass' => '',
+        'name' => 'rctask',
+        'user' => 'rax',
+        'pass' => '512',
     ],
 
     // Claude API key from https://console.anthropic.com. Leave empty to use

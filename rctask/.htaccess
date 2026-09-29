@@ -1,8 +1,9 @@
-# If the whole rcphp folder is served (e.g. XAMPP htdocs), send visitors to
-# public/ and block direct access to config and source files.
-<FilesMatch "^(config\.php|config\.sample\.php|README\.md|\.gitignore)$">
-  Require all denied
-</FilesMatch>
-RewriteEngine On
-RewriteCond %{REQUEST_URI} !/public/
-RewriteRule ^(.*)$ public/$1 [L]
+# rctask: block direct access to config and docs.
+# index.php in this folder redirects visitors to public/.
+DirectoryIndex index.php
+
+<IfModule mod_authz_core.c>
+  <FilesMatch "^(config\.php|config\.sample\.php|README\.md|FEATURES\.md|\.gitignore)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>

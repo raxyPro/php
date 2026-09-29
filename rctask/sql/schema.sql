@@ -1,8 +1,9 @@
--- rcphp schema (MySQL 8+ / MariaDB 10.4+)
--- Run once:  mysql -u root -p < sql/schema.sql
-
-CREATE DATABASE IF NOT EXISTS rcfamily CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE rcfamily;
+-- rctask schema (MySQL 8+ / MariaDB 10.4+)
+-- Tables only. Create the database yourself first, e.g.:
+--   CREATE DATABASE rctask CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- then run this file against it:
+--   mysql -u root -p rctask < sql/schema.sql
+-- (or phpMyAdmin: select the rctask database -> Import -> sql/schema.sql)
 
 CREATE TABLE IF NOT EXISTS users (
   id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

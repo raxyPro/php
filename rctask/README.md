@@ -1,4 +1,6 @@
-# rcphp — rcfamily task manager (PHP + MySQL)
+# rctask — task manager (PHP + MySQL)
+
+See FEATURES.md for a full description of what the app does today.
 
 The PHP + MySQL edition of rcfamily. Type what needs doing in plain words; Claude (or built-in rules) splits it into tasks and puts each one in a **bandwidth**, the slot of your week when you can actually do it: Workday, Early morning, Weekday evening, Weekend, On the go. Bandwidths are editable (name, description, days, time window, hours per week).
 
@@ -12,12 +14,13 @@ No frameworks, no Composer, no build step: plain PHP 8.1+, PDO, MySQL/MariaDB an
 
 ## Set up on Windows (XAMPP)
 
-1. **Create the database.** Start MySQL in the XAMPP Control Panel, then in a terminal:
+1. **Create the database and tables.** Start MySQL in the XAMPP Control Panel. Create a database named `rctask` (utf8mb4), then load the tables into it:
    ```powershell
-   cd C:\Users\Hp\Dropbox\AppDev\rcphp
-   C:\xampp\mysql\bin\mysql.exe -u root -p < sql\schema.sql
+   cd C:\Users\Hp\Dropbox\AppDev\php\rctask
+   C:\xampp\mysql\bin\mysql.exe -u root -p -e "CREATE DATABASE IF NOT EXISTS rctask CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+   C:\xampp\mysql\bin\mysql.exe -u root -p rctask < sql\schema.sql
    ```
-   (Or open phpMyAdmin → Import → choose `sql/schema.sql`.)
+   (Or in phpMyAdmin: create `rctask`, select it → Import → choose `sql/schema.sql`.) `sql/schema.sql` only creates tables; it does not create the database.
 
 2. **Configure.** Copy `config.sample.php` to `config.php` and set the database user/password. Paste your Claude API key into `anthropic_api_key` if you have one.
 
@@ -29,13 +32,13 @@ No frameworks, no Composer, no build step: plain PHP 8.1+, PDO, MySQL/MariaDB an
      Open http://localhost:8080
    - **Apache (XAMPP):** add to `C:\xampp\apache\conf\extra\httpd-vhosts.conf`, then restart Apache:
      ```apache
-     Alias /rcphp "C:/Users/Hp/Dropbox/AppDev/rcphp/public"
-     <Directory "C:/Users/Hp/Dropbox/AppDev/rcphp/public">
+     Alias /rctask "C:/Users/Hp/Dropbox/AppDev/php/rctask/public"
+     <Directory "C:/Users/Hp/Dropbox/AppDev/php/rctask/public">
          Require all granted
          AllowOverride All
      </Directory>
      ```
-     Open http://localhost/rcphp/
+     Open http://localhost/rctask/
 
 4. **Create your account** on the sign-in page (“Create an account”). Then set `'allow_register' => false` in `config.php` so nobody else can sign up.
 
@@ -51,9 +54,9 @@ No frameworks, no Composer, no build step: plain PHP 8.1+, PDO, MySQL/MariaDB an
 ## Layout
 
 ```
-rcphp/
+rctask/
   config.sample.php      copy to config.php (DB, Claude key, timezone, sign-up switch)
-  sql/schema.sql         users, bandwidths, entries tables
+  sql/schema.sql         users, bandwidths, entries tables (database: rctask)
   public/                web root — point the server here
     index.php            app page (requires sign-in)
     login.php, register.php, logout.php

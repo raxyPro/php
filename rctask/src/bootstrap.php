@@ -90,3 +90,51 @@ function json_out(array $data, int $status = 200): never
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+/** Sign-up is open when config allows it, or when no account exists yet (first run). */
+function registration_open(): bool
+{
+    global $CONFIG;
+    if (!empty($CONFIG['allow_register'])) return true;
+    return (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn() === 0;
+}
+
+/* ---------- environment (production vs development) ---------- */
+function app_env(): string
+{
+    global $CONFIG;
+    return ($CONFIG['env'] ?? 'local') === 'production' ? 'production' : 'dev';
+}
+
+function is_production(): bool
+{
+    return app_env() === 'production';
+}
+
+/** "[DEV] " in development, "" in production. */
+function env_title_prefix(): string
+{
+    return is_production() ? '' : '[DEV] ';
+}
+
+/** Browser/phone top-bar colour: blue on production, orange on development. */
+function env_theme_color(): string
+{
+    return is_production() ? '#1F5F8B' : '#C2410C';
+}
+
+/** Orange warning strip shown only in development. */
+function env_banner(): string
+{
+    if (is_production()) return '';
+    global $CONFIG;
+    $db = (string)($CONFIG['db']['name'] ?? '');
+    $host = (string)(gethostname() ?: '');
+    return '<div class="envbar" role="note"><b>DEVELOPMENT</b><span>Test copy · database <code>' . h($db) . '</code> on <code>' . h($host) . '</code> · changes here do not affect the live app</span></div>';
+}
+
+/** Small badge next to the app name. */
+function env_badge(): string
+{
+    return is_production() ? '<span class="envtag live">LIVE</span>' : '<span class="envtag dev">DEV</span>';
+}

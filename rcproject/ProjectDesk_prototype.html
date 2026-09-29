@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProjectDesk – Prototype</title>
+<style>
+:root{--pg:#31752F;--pgd:#255a24;--line:#d6d6d6;--hdr:#f3f3f3;--sel:#cde3f7;--txt:#222;--mut:#666}
+*{box-sizing:border-box}
+body{margin:0;font:12px "Segoe UI",system-ui,-apple-system,sans-serif;color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#fff}
+button,select,input,textarea{font:inherit}
+/* title + tabs */
+.title{background:var(--pg);color:#fff;height:30px;display:flex;align-items:center;padding:0 10px;gap:12px}
+.title .app{font-weight:600}
+.title .doc{flex:1;text-align:center;opacity:.9}
+.title select{background:var(--pgd);color:#fff;border:1px solid #5d9b5b;padding:2px 4px}
+.tabs{background:var(--pg);display:flex;padding-left:4px;height:26px;align-items:flex-end}
+.tab{color:#fff;padding:4px 14px;cursor:pointer;text-transform:uppercase;font-size:11px;letter-spacing:.3px}
+.tab.file{background:var(--pgd);margin-right:4px}
+.tab.on{background:var(--hdr);color:var(--pg);font-weight:600}
+.tab:not(.on):not(.file):hover{background:#3f8a3c}
+/* ribbon */
+.ribbon{background:var(--hdr);border-bottom:1px solid var(--line);display:flex;height:92px;padding:4px 2px 0}
+.grp{display:flex;flex-direction:column;border-right:1px solid #dcdcdc;padding:0 6px}
+.grp .btns{display:flex;gap:2px;flex:1}
+.grp .gl{font-size:10.5px;color:var(--mut);text-align:center;padding:2px 0}
+.col{display:flex;flex-direction:column;justify-content:flex-start}
+.bL,.bS{border:1px solid transparent;background:none;cursor:pointer;color:#333;border-radius:2px}
+.bL{display:flex;flex-direction:column;align-items:center;width:62px;padding:3px 2px;height:66px}
+.bL .i{font-size:22px;line-height:30px;color:var(--pg)}
+.bL span:last-child{font-size:11px;line-height:1.15}
+.bS{display:flex;align-items:center;gap:5px;padding:1px 6px;height:21px;text-align:left;white-space:nowrap}
+.bS .i{width:14px;text-align:center;color:var(--pg);font-weight:700}
+.bL:hover,.bS:hover{background:#dbe9d9;border-color:#b5d1b2}
+/* main */
+.main{flex:1;display:flex;min-height:0}
+.vstrip{width:22px;background:var(--pg);color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:10px 0}
+.content{flex:1;display:flex;flex-direction:column;min-width:0}
+.fbar{display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.fbar label{color:var(--mut)}
+.fbar select,.fbar input{border:1px solid #bbb;padding:2px 4px;height:22px}
+.goal{background:#f4f9f3;border-bottom:1px solid var(--line);padding:6px 10px}
+.goal b{color:var(--pg)}
+.status{height:22px;background:var(--hdr);border-top:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 10px;color:var(--mut);font-size:11px}
+/* split gantt */
+.split{flex:1;display:flex;min-height:0}
+.lp{width:62%;overflow:auto;border-right:3px double #bbb}
+.rp{flex:1;overflow:auto;position:relative}
+table.g{border-collapse:collapse;width:max-content;min-width:100%}
+.g th{position:sticky;top:0;background:var(--hdr);height:44px;border:1px solid var(--line);font-weight:600;padding:0 6px;text-align:left;z-index:2;white-space:nowrap}
+.g td{height:24px;border:1px solid #e6e6e6;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.g tr{cursor:default}
+.g tr.sel td{background:var(--sel)}
+.g tr.proj td{font-weight:700;background:#eef4ed}
+.g tr.proj.sel td{background:var(--sel)}
+.g tr.par td.nm{font-weight:600}
+.g td.id{color:var(--mut);text-align:right;width:34px;background:var(--hdr)}
+.g td.ind{width:24px;text-align:center}
+.tw{cursor:pointer;display:inline-block;width:12px;color:#555}
+.pill{display:inline-block;padding:0 7px;border-radius:9px;font-size:11px;line-height:17px}
+.s-ns{background:#eee;color:#555}.s-ip{background:#dbeafc;color:#1a5fa8}.s-oh{background:#fdf0d5;color:#8a5a00}.s-c{background:#dcefdc;color:#2f6b2d}
+.late{color:#c62828;font-weight:700}
+/* gantt */
+.gh{position:sticky;top:0;background:var(--hdr);z-index:3;border-bottom:1px solid var(--line)}
+.gh .row{display:flex;height:22px;border-bottom:1px solid var(--line)}
+.gh .c{border-right:1px solid var(--line);font-size:10.5px;color:#444;padding-left:3px;line-height:22px;overflow:hidden;white-space:nowrap;flex:none}
+.gb{position:relative}
+.gr{height:24px;border-bottom:1px solid #f0f0f0;position:relative}
+.gr.sel{background:#e7f1fb}
+.bar{position:absolute;top:6px;height:12px;border:1px solid #5b86c5;background:#a9c6ea;border-radius:1px}
+.bar.ip{background:#5b9bd5;border-color:#2e6ca4}.bar.oh{background:#f4c26b;border-color:#c48b1f}.bar.c{background:#86bf85;border-color:#4b8a49}
+.bar.late{background:#ef9a9a;border-color:#c62828}
+.sum{position:absolute;top:8px;height:6px;background:#222}
+.sum:before,.sum:after{content:"";position:absolute;top:0;border:5px solid transparent;border-top:6px solid #222}
+.sum:before{left:-5px}.sum:after{right:-5px}
+.blab{position:absolute;top:4px;font-size:11px;color:#333;white-space:nowrap}
+.today{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed #e07b00;z-index:1}
+/* cards / pages */
+.page{flex:1;overflow:auto;padding:14px 16px;background:#fafafa}
+.tiles{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.tile{background:#fff;border:1px solid var(--line);border-top:3px solid var(--pg);padding:10px 14px;min-width:150px}
+.tile .n{font-size:24px;font-weight:600}
+.tile .l{color:var(--mut)}
+.tile.red{border-top-color:#c62828}.tile.red .n{color:#c62828}
+.tile.blue{border-top-color:#2e6ca4}.tile.amber{border-top-color:#c48b1f}
+.card{background:#fff;border:1px solid var(--line);margin-bottom:14px}
+.card h3{margin:0;padding:8px 12px;font-size:13px;background:var(--hdr);border-bottom:1px solid var(--line);color:var(--pg)}
+.card .bd{padding:10px 12px}
+table.t{border-collapse:collapse;width:100%}
+.t th{background:var(--hdr);text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+.t td{padding:4px 8px;border-bottom:1px solid #eee;vertical-align:middle}
+.t tr.gh2 td{background:#eef4ed;font-weight:700;color:var(--pg)}
+.t select,.t input{border:1px solid #ccc;padding:2px 4px;height:22px}
+.t input.rm{width:100%;min-width:160px}
+.hb{height:14px;background:#eee;position:relative;min-width:120px;display:inline-block;width:72%;vertical-align:middle;margin-right:6px}
+.hb i{position:absolute;left:0;top:0;bottom:0;background:var(--pg)}
+.stack{display:flex;height:22px;border:1px solid #ccc;overflow:hidden}
+.stack div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;overflow:hidden}
+.rag{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-right:5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.two{grid-template-columns:1fr}.lp{width:100%}.rp{display:none}}
+/* modal */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:50}
+.mask.on{display:flex}
+.dlg{background:#fff;width:560px;max-width:94vw;border:1px solid #999;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.dlg .dh{background:var(--pg);color:#fff;padding:7px 12px;font-weight:600;display:flex;justify-content:space-between}
+.dlg .dh span{cursor:pointer}
+.dlg .db{padding:14px;display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:8px 10px;align-items:center}
+.dlg .db label{color:#444}
+.dlg .db .full{grid-column:2 / 5}
+.dlg input,.dlg select,.dlg textarea{border:1px solid #bbb;padding:3px 5px;width:100%}
+.dlg textarea{height:54px;resize:vertical}
+.dlg .df{padding:10px 14px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--hdr)}
+.btn{border:1px solid #aaa;background:#fff;padding:4px 16px;cursor:pointer}
+.btn.pri{background:var(--pg);color:#fff;border-color:var(--pgd)}
+.note{grid-column:1/5;color:#8a5a00;background:#fdf6e3;padding:5px 8px;border:1px solid #f0dca8}
+.muted{color:var(--mut)}
+.proto{position:fixed;right:10px;bottom:28px;background:#fff8d6;border:1px solid #e5d27a;padding:4px 10px;font-size:11px;z-index:40}
+</style>
+</head>
+<body>
+<div class="title">
+  <span class="app">ProjectDesk</span>
+  <span class="doc" id="docTitle"></span>
+  <span>Signed in as</span><select id="me" onchange="S.me=+this.value;S.sel=null;render()"></select>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="ribbon" id="ribbon"></div>
+<div class="main">
+  <div class="vstrip" id="vstrip"></div>
+  <div class="content" id="content"></div>
+</div>
+<div class="status" id="statusbar"></div>
+<div class="mask" id="mask"><div class="dlg" id="dlg"></div></div>
+<div class="proto">Prototype · data resets on reload</div>
+
+<script>
+/* ---------- helpers ---------- */
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const iso=d=>{d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const addD=(n,b=TODAY)=>{const d=new Date(b);d.setDate(d.getDate()+n);return iso(d)};
+const P=s=>new Date(s+'T00:00:00');
+const fmt=s=>s?P(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}):'';
+const dd=(a,b)=>Math.round((P(b)-P(a))/864e5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STAT=['Not Started','In Progress','On Hold','Completed'];
+const SCLS={'Not Started':'ns','In Progress':'ip','On Hold':'oh','Completed':'c'};
+const SCOL={'Not Started':'#9e9e9e','In Progress':'#2e6ca4','On Hold':'#c48b1f','Completed':'#4b8a49'};
+
+/* ---------- seed data ---------- */
+let users=[
+ {id:1,name:'Ramu Singh',email:'ramu@rcpro.in',role:'Admin',active:true},
+ {id:2,name:'Priya Sharma',email:'priya@example.com',role:'Member',active:true},
+ {id:3,name:'Arjun Mehta',email:'arjun@example.com',role:'Member',active:true},
+ {id:4,name:'Neha Kapoor',email:'neha@example.com',role:'Member',active:true},
+ {id:5,name:'Vikram Rao',email:'vikram@example.com',role:'Member',active:true}];
+let projects=[
+ {id:1,name:'Client Portal Revamp',goal:'Launch a self-service client portal that cuts onboarding time from 5 days to 1 day by end of Q4.',owner:1,start:addD(-21),target:addD(40)},
+ {id:2,name:'Algo Trading Engine v2',goal:'Move options strategies to automated execution with hard risk limits and daily P&L reporting.',owner:3,start:addD(-12),target:addD(55)},
+ {id:3,name:'Noida Office Setup',goal:'Office ready for 10 people with furniture, network and IT equipment.',owner:4,start:addD(-30),target:addD(9)}];
+let tasks=[];let TID=1;
+function T(pid,par,name,s,t,owner,eff,st,rm){const x={id:TID++,projectId:pid,parentId:par,name,start:addD(s),target:addD(t),owner,effort:eff,status:st,remark:rm||''};tasks.push(x);return x.id}
+let a=T(1,null,'Requirements & design',-21,-5,2,40,'Completed','Signed off by business');
+T(1,a,'Stakeholder workshops',-21,-14,2,16,'Completed');
+T(1,a,'UI wireframes',-13,-5,4,24,'Completed','Figma link shared');
+a=T(1,null,'Build',-4,25,3,120,'In Progress');
+T(1,a,'Login & KYC module',-4,8,3,40,'In Progress','API from vendor pending');
+T(1,a,'Dashboard screens',2,18,4,48,'Not Started');
+T(1,a,'Notifications service',-3,-1,5,32,'In Progress','Delayed – SMTP access');
+a=T(1,null,'UAT & Go-live',26,40,1,40,'Not Started');
+T(1,a,'UAT with business',26,35,2,24,'Not Started');
+T(1,a,'Production cut-over',36,40,1,16,'Not Started');
+a=T(2,null,'Strategy migration',-12,20,3,80,'In Progress');
+T(2,a,'Port short-strangle logic',-12,-2,3,30,'Completed');
+T(2,a,'Iron-condor adjustments',-1,12,5,30,'In Progress');
+T(2,a,'Backtest 2 years data',8,20,1,20,'Not Started');
+a=T(2,null,'Risk controls',10,40,3,60,'Not Started');
+T(2,a,'Max-loss kill switch',10,22,5,24,'Not Started');
+T(2,a,'Margin monitor',20,40,3,36,'Not Started');
+T(2,null,'Broker API certification',-8,-3,1,12,'On Hold','Waiting for broker sandbox keys');
+a=T(3,null,'Interiors',-30,0,4,60,'In Progress');
+T(3,a,'Furniture order',-30,-15,4,8,'Completed');
+T(3,a,'Workstation installation',-10,-2,5,24,'In Progress','Vendor short-staffed');
+T(3,null,'Network & Wi-Fi',-5,5,5,20,'In Progress');
+T(3,null,'Laptops & accessories',0,9,2,12,'Not Started');
+let UID=6,PID=4;
+
+/* ---------- state ---------- */
+const S={me:1,view:'project',tab:'Task',sel:null,col:{},f:{p:'all',s:'all',o:'all',q:''},zoom:'day',rp:'all'};
+const me=()=>users.find(u=>u.id===S.me);
+const isAdmin=()=>me().role==='Admin';
+const uname=id=>(users.find(u=>u.id===id)||{}).name||'—';
+const late=t=>t.status!=='Completed'&&P(t.target)<TODAY;
+const kids=id=>tasks.filter(t=>t.parentId===id);
+const canEditP=p=>isAdmin()||p.owner===S.me;
+function roll(t){const k=kids(t.id);if(!k.length)return t;
+ return{...t,start:k.map(x=>x.start).sort()[0],target:k.map(x=>x.target).sort().pop(),effort:k.reduce((s,x)=>s+(+x.effort||0),0)}}
+function visProjects(){return projects.filter(p=>isAdmin()||p.owner===S.me||tasks.some(t=>t.projectId===p.id&&t.owner===S.me))}
+function pStats(pid){const ts=tasks.filter(t=>(pid==='all'||t.projectId===pid)&&!kids(t.id).length);
+ const eff=ts.reduce((s,t)=>s+(+t.effort||0),0),done=ts.filter(t=>t.status==='Completed').reduce((s,t)=>s+(+t.effort||0),0);
+ const by={};STAT.forEach(s=>by[s]=ts.filter(t=>t.status===s).length);
+ return{ts,n:ts.length,eff,done,pct:eff?Math.round(done*100/eff):0,late:ts.filter(late).length,by}}
+
+/* ---------- ribbon ---------- */
+const RIB={
+ Task:[
+  {g:'View',b:[['L','▤','Gantt Chart',"go('project')"],['L','☷','My Tasks',"go('tasks')"]]},
+  {g:'Tasks',b:[['L','＋','New Task','newTask()'],['S','↳','Subtask','newSub()'],['S','ⓘ','Information','editSel()'],['S','✕','Delete','delSel()']]},
+  {g:'Schedule',b:[['S','⇥','Indent','indent()'],['S','⇤','Outdent','outdent()'],['S','⇢','Scroll to Task','scrollSel()']]},
+  {g:'Status',b:[['S','○','Not Started',"stat('Not Started')"],['S','◑','In Progress',"stat('In Progress')"],['S','‖','On Hold',"stat('On Hold')"],['L','✔','Mark Complete',"stat('Completed')"]]}],
+ Resource:[
+  {g:'Users',b:[['L','☺','User List',"go('users')"],['L','＋','Add User','openUser()']]},
+  {g:'Assignments',b:[['L','☷','My Tasks',"go('tasks')"],['L','▥','Workload',"go('reports')"]]}],
+ Report:[
+  {g:'Reports',b:[['L','▦','Dashboard',"go('reports')"],['L','⚑','Overdue',"go('reports','overdue')"]]},
+  {g:'Export',b:[['L','⭳','Export CSV','exportCSV()'],['L','⎙','Print','window.print()']]}],
+ Project:[
+  {g:'Project',b:[['L','＋','New Project','openProject()'],['L','ⓘ','Project Info','projInfo()'],['S','✕','Delete Project','delProject()']]}],
+ View:[
+  {g:'Views',b:[['L','▤','Gantt Chart',"go('project')"],['L','☷','Task View',"go('tasks')"],['L','▦','Reports',"go('reports')"],['L','☺','Users',"go('users')"]]},
+  {g:'Zoom',b:[['S','◧','Days',"S.zoom='day';render()"],['S','◨','Weeks',"S.zoom='week';render()"],['S','⌂','Today','scrollToday()']]},
+  {g:'Outline',b:[['S','▾','Expand All','S.col={};render()'],['S','▸','Collapse All','collapseAll()']]}]};
+function ribbon(){
+ document.getElementById('tabs').innerHTML='<div class="tab file">File</div>'+Object.keys(RIB).map(k=>`<div class="tab ${S.tab===k?'on':''}" onclick="S.tab='${k}';ribbon()">${k}</div>`).join('');
+ document.getElementById('ribbon').innerHTML=RIB[S.tab].map(g=>{let h='',col=[];
+  const flush=()=>{if(col.length){h+='<div class="col">'+col.join('')+'</div>';col=[]}};
+  g.b.forEach(([t,i,l,f])=>{if(t==='L'){flush();h+=`<button class="bL" onclick="${f}"><span class="i">${i}</span><span>${l}</span></button>`}
+   else{col.push(`<button class="bS" onclick="${f}"><span class="i">${i}</span>${l}</button>`);if(col.length===3)flush()}});
+  flush();return`<div class="grp"><div class="btns">${h}</div><div class="gl">${g.g}</div></div>`}).join('');
+}
+
+/* ---------- views ---------- */
+function go(v,anchor){S.view=v;S.anchor=anchor;render()}
+function render(){
+ document.getElementById('me').innerHTML=users.filter(u=>u.active).map(u=>`<option value="${u.id}" ${u.id===S.me?'selected':''}>${esc(u.name)} (${u.role})</option>`).join('');
+ const names={project:'Gantt Chart',tasks:'Task View',reports:'Reports',users:'Users'};
+ document.getElementById('vstrip').textContent=names[S.view];
+ document.getElementById('docTitle').textContent=names[S.view]+' — ProjectDesk';
+ const c=document.getElementById('content');
+ c.innerHTML={project:projectView,tasks:taskView,reports:reportView,users:userView}[S.view]();
+ if(S.view==='project')wireSplit();
+ if(S.anchor){const el=document.getElementById(S.anchor);if(el)el.scrollIntoView();S.anchor=null}
+ const my=tasks.filter(t=>t.owner===S.me&&t.status!=='Completed');
+ document.getElementById('statusbar').innerHTML=`<span>Ready</span><span>Projects: ${visProjects().length}</span><span>Tasks: ${tasks.length}</span><span>My open tasks: ${my.length}</span><span style="color:#c62828">Overdue: ${tasks.filter(late).length}</span><span style="margin-left:auto">Today: ${fmt(iso(TODAY))}</span>`;
+}
+
+/* Project (Gantt) view */
+function match(t){const f=S.f;return(f.s==='all'||t.status===f.s)&&(f.o==='all'||t.owner==+f.o)&&(!f.q||t.name.toLowerCase().includes(f.q.toLowerCase()))}
+function buildRows(){const rows=[];
+ visProjects().filter(p=>S.f.p==='all'||p.id==+S.f.p).forEach(p=>{
+  rows.push({k:'p'+p.id,type:'p',p,lvl:0});if(S.col['p'+p.id])return;
+  tasks.filter(t=>t.projectId===p.id&&!t.parentId).forEach(t=>{
+   const ks=kids(t.id),km=ks.filter(match);
+   if(!match(t)&&!km.length)return;
+   rows.push({k:'t'+t.id,type:'t',t,lvl:1,par:ks.length>0});
+   if(S.col['t'+t.id])return;
+   (match(t)?ks:km).forEach(k=>rows.push({k:'t'+k.id,type:'t',t:k,lvl:2}));
+  })});return rows}
+function projectView(){
+ const vp=visProjects(),rows=buildRows(),f=S.f;
+ const sp=f.p!=='all'&&projects.find(p=>p.id==+f.p);
+ let bar=`<div class="fbar"><label>Project</label><select onchange="S.f.p=this.value;render()"><option value="all">All projects</option>${vp.map(p=>`<option value="${p.id}" ${f.p==p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+  <label>Status</label><select onchange="S.f.s=this.value;render()"><option value="all">All</option>${STAT.map(s=>`<option ${f.s===s?'selected':''}>${s}</option>`).join('')}</select>
+  <label>Owner</label><select onchange="S.f.o=this.value;render()"><option value="all">All</option>${users.map(u=>`<option value="${u.id}" ${f.o==u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select>
+  <input placeholder="Search task…" value="${esc(f.q)}" onchange="S.f.q=this.value;render()">
+  <span class="muted" style="margin-left:auto">Double-click a row to edit · select a row, then use the ribbon</span></div>`;
+ if(sp)bar+=`<div class="goal"><b>Goal:</b> ${esc(sp.goal)} &nbsp;·&nbsp; <span class="muted">Owner ${esc(uname(sp.owner))} · ${fmt(sp.start)} → ${fmt(sp.target)}</span></div>`;
+ // grid
+ let g=`<table class="g"><thead><tr><th></th><th title="Indicators">ⓘ</th><th>Task Name</th><th>Owner</th><th>Start</th><th>Target Date</th><th>Effort (h)</th><th>Status</th><th>Remark</th></tr></thead><tbody>`;
+ let n=0;
+ rows.forEach(r=>{n++;const sel=S.sel===r.k?'sel':'';
+  if(r.type==='p'){const p=r.p,st=pStats(p.id);
+   g+=`<tr class="proj ${sel}" onclick="pick('${r.k}')" ondblclick="openProject(${p.id})" title="${esc(p.goal)}"><td class="id">${n}</td><td class="ind">${st.late?'<span class="late">⚑</span>':''}</td>
+   <td class="nm"><span class="tw" onclick="tog('${r.k}',event)">${S.col[r.k]?'▸':'▾'}</span>${esc(p.name)}</td><td>${esc(uname(p.owner))}</td><td>${fmt(p.start)}</td><td>${fmt(p.target)}</td><td>${st.eff}</td><td>${st.pct}% done</td><td class="muted">${esc(p.goal)}</td></tr>`}
+  else{const t=r.t,v=roll(t),L=late(t);
+   const ind=t.status==='Completed'?'<span style="color:#4b8a49">✔</span>':L?'<span class="late" title="Overdue">⚑</span>':t.status==='On Hold'?'<span style="color:#c48b1f">‖</span>':'';
+   g+=`<tr class="${sel} ${r.par?'par':''}" onclick="pick('${r.k}')" ondblclick="openTask(${t.id})"><td class="id">${n}</td><td class="ind">${ind}</td>
+   <td class="nm" style="padding-left:${r.lvl===1?16:34}px">${r.par?`<span class="tw" onclick="tog('${r.k}',event)">${S.col[r.k]?'▸':'▾'}</span>`:'<span class="tw"></span>'}${esc(t.name)}</td>
+   <td>${esc(uname(t.owner))}</td><td>${fmt(v.start)}</td><td class="${L?'late':''}">${fmt(v.target)}</td><td>${v.effort}</td>
+   <td><span class="pill s-${SCLS[t.status]}">${t.status}</span></td><td>${esc(t.remark)}</td></tr>`}});
+ if(!rows.length)g+=`<tr><td colspan="9" class="muted" style="padding:14px">No projects to show. Use Project ▸ New Project.</td></tr>`;
+ g+='</tbody></table>';
+ // gantt
+ const ds=[];rows.forEach(r=>{const o=r.type==='p'?r.p:roll(r.t);ds.push(o.start,o.target)});ds.push(iso(TODAY));ds.sort();
+ let s0=P(ds[0]);s0.setDate(s0.getDate()-3);s0.setDate(s0.getDate()-((s0.getDay()+6)%7));s0=iso(s0);
+ const s1=addD(14,P(ds[ds.length-1])),N=dd(s0,s1)+1,dw=S.zoom==='day'?22:7,W=N*dw;
+ let top='',bot='',m=null,mw=0;
+ for(let i=0;i<N;i++){const d=P(addD(i,P(s0)));const key=d.getMonth()+'-'+d.getFullYear();
+  if(key!==m){if(m)top+=`<div class="c" style="width:${mw*dw}px">${mlab}</div>`;m=key;mw=0;var mlab=d.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}mw++;
+  if(S.zoom==='day')bot+=`<div class="c" style="width:${dw}px;padding:0;text-align:center;${d.getDay()%6===0?'background:#e8e8e8':''}">${'SMTWTFS'[d.getDay()]}</div>`;
+  else if(d.getDay()===1)bot+=`<div class="c" style="width:${7*dw}px">${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}</div>`}
+ top+=`<div class="c" style="width:${mw*dw}px">${mlab}</div>`;
+ const wk=`repeating-linear-gradient(90deg,transparent 0,transparent ${5*dw}px,#f1f1f1 ${5*dw}px,#f1f1f1 ${7*dw}px)`;
+ let gb=`<div class="gb" style="width:${W}px;background:${S.zoom==='day'?wk:'none'}"><div class="today" style="left:${dd(s0,iso(TODAY))*dw+dw/2}px" title="Today"></div>`;
+ rows.forEach(r=>{const o=r.type==='p'?r.p:roll(r.t),x=dd(s0,o.start)*dw,w=Math.max(dw,(dd(o.start,o.target)+1)*dw);
+  gb+=`<div class="gr ${S.sel===r.k?'sel':''}" onclick="pick('${r.k}')" ondblclick="${r.type==='p'?'openProject('+r.p.id+')':'openTask('+r.t.id+')'}">`;
+  if(r.type==='p'||r.par)gb+=`<div class="sum" style="left:${x}px;width:${w}px;${r.type==='t'?'background:#555':''}"></div>`;
+  else{const t=r.t;gb+=`<div class="bar ${SCLS[t.status]} ${late(t)?'late':''}" style="left:${x}px;width:${w}px" title="${esc(t.name)} · ${t.status}"></div>`}
+  gb+=`<span class="blab" style="left:${x+w+8}px">${esc(uname(r.type==='p'?r.p.owner:r.t.owner))}</span></div>`});
+ gb+='</div>';
+ return bar+`<div class="split"><div class="lp" id="lp">${g}</div><div class="rp" id="rp"><div class="gh" style="width:${W}px"><div class="row">${top}</div><div class="row">${bot}</div></div>${gb}</div></div>`;
+}
+function wireSplit(){const l=document.getElementById('lp'),r=document.getElementById('rp');let lock=0;
+ l.onscroll=()=>{if(lock){lock=0;return}lock=1;r.scrollTop=l.scrollTop};
+ r.onscroll=()=>{if(lock){lock=0;return}lock=1;l.scrollTop=r.scrollTop};
+ if(S.firstGantt!==1){S.firstGantt=1;setTimeout(scrollToday,0)}}
+function scrollToday(){if(S.view!=='project'){go('project')}const r=document.getElementById('rp'),t=r&&r.querySelector('.today');if(t)r.scrollLeft=Math.max(0,parseInt(t.style.left)-200)}
+function scrollSel(){const r=document.getElementById('rp');const g=r&&r.querySelector('.gr.sel .bar,.gr.sel .sum');if(g)r.scrollLeft=Math.max(0,parseInt(g.style.left)-60)}
+function pick(k){S.sel=k;render()}
+function tog(k,e){e.stopPropagation();S.col[k]=!S.col[k];render()}
+function collapseAll(){projects.forEach(p=>S.col['p'+p.id]=true);render()}
+
+/* Task view (my tasks) */
+function taskView(){
+ const my=tasks.filter(t=>t.owner===S.me&&!kids(t.id).length);
+ const wk=addD(7),open=my.filter(t=>t.status!=='Completed');
+ const grp=[['Overdue',open.filter(late)],['Due in next 7 days',open.filter(t=>!late(t)&&t.target<=wk)],['Later',open.filter(t=>t.target>wk)],['Completed',my.filter(t=>t.status==='Completed')]];
+ let h=`<div class="page"><h2 style="margin:0 0 10px;color:var(--pg);font-weight:600">Tasks assigned to ${esc(me().name)}</h2>
+ <div class="tiles"><div class="tile"><div class="n">${my.length}</div><div class="l">Assigned</div></div>
+ <div class="tile blue"><div class="n">${open.length}</div><div class="l">Open</div></div>
+ <div class="tile amber"><div class="n">${grp[1][1].length}</div><div class="l">Due this week</div></div>
+ <div class="tile red"><div class="n">${grp[0][1].length}</div><div class="l">Overdue</div></div>
+ <div class="tile"><div class="n">${open.reduce((s,t)=>s+(+t.effort||0),0)}h</div><div class="l">Open effort</div></div></div>
+ <div class="card"><table class="t"><thead><tr><th>Project</th><th>Task</th><th>Target Date</th><th>Effort (h)</th><th>Status</th><th>Remark</th><th></th></tr></thead><tbody>`;
+ grp.forEach(([g,list])=>{if(!list.length)return;h+=`<tr class="gh2"><td colspan="7">${g} (${list.length})</td></tr>`;
+  list.sort((a,b)=>a.target<b.target?-1:1).forEach(t=>{const p=projects.find(x=>x.id===t.projectId),par=t.parentId&&tasks.find(x=>x.id===t.parentId);
+   h+=`<tr><td>${esc(p.name)}</td><td>${par?`<span class="muted">${esc(par.name)} ›</span> `:''}${esc(t.name)}</td><td class="${late(t)?'late':''}">${fmt(t.target)}</td><td>${t.effort}</td>
+   <td><select onchange="setF(${t.id},'status',this.value)">${STAT.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+   <td><input class="rm" value="${esc(t.remark)}" placeholder="Add a remark…" onchange="setF(${t.id},'remark',this.value)"></td>
+   <td><button class="btn" onclick="openTask(${t.id})">Open</button></td></tr>`})});
+ if(!my.length)h+=`<tr><td colspan="7" class="muted" style="padding:14px">No tasks assigned to you.</td></tr>`;
+ return h+'</tbody></table></div></div>';
+}
+function setF(id,k,v){const t=tasks.find(x=>x.id===id);t[k]=v;render()}
+
+/* Reports */
+function reportView(){
+ const vp=visProjects(),pid=S.rp==='all'?'all':+S.rp;
+ const scope=pid==='all'?tasks.filter(t=>vp.some(p=>p.id===t.projectId)):tasks.filter(t=>t.projectId===pid);
+ const leaf=scope.filter(t=>!kids(t.id).length),eff=leaf.reduce((s,t)=>s+(+t.effort||0),0),done=leaf.filter(t=>t.status==='Completed').reduce((s,t)=>s+(+t.effort||0),0);
+ const lt=leaf.filter(late);
+ let h=`<div class="page"><div class="fbar" style="background:#fff;border:1px solid var(--line);margin-bottom:12px"><label>Report for</label><select onchange="S.rp=this.value;render()"><option value="all">All projects</option>${vp.map(p=>`<option value="${p.id}" ${S.rp==p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><span class="muted" style="margin-left:auto">% complete is weighted by effort</span></div>
+ <div class="tiles"><div class="tile"><div class="n">${pid==='all'?vp.length:1}</div><div class="l">Projects</div></div>
+ <div class="tile"><div class="n">${leaf.length}</div><div class="l">Tasks</div></div>
+ <div class="tile blue"><div class="n">${eff?Math.round(done*100/eff):0}%</div><div class="l">Complete (${done}/${eff} h)</div></div>
+ <div class="tile red"><div class="n">${lt.length}</div><div class="l">Overdue tasks</div></div>
+ <div class="tile amber"><div class="n">${leaf.filter(t=>t.status==='On Hold').length}</div><div class="l">On hold</div></div></div>
+ <div class="card"><h3>Status breakdown</h3><div class="bd"><div class="stack">${STAT.map(s=>{const c=leaf.filter(t=>t.status===s).length;return c?`<div style="flex:${c};background:${SCOL[s]}" title="${s}: ${c}">${s} · ${c}</div>`:''}).join('')}</div></div></div>
+ <div class="card"><h3>Project health</h3><table class="t"><thead><tr><th>Project</th><th>Owner</th><th>Target</th><th>Tasks</th><th style="width:28%">% Complete</th><th>Overdue</th><th>Health</th></tr></thead><tbody>`;
+ (pid==='all'?vp:vp.filter(p=>p.id===pid)).forEach(p=>{const s=pStats(p.id),days=dd(iso(TODAY),p.target);
+  const rag=s.late>=2||(days<14&&s.pct<60)?['#c62828','At risk']:s.late===1||s.by['On Hold']?['#e0a100','Watch']:['#4b8a49','On track'];
+  h+=`<tr><td><b>${esc(p.name)}</b></td><td>${esc(uname(p.owner))}</td><td>${fmt(p.target)} <span class="muted">(${days>=0?days+'d left':-days+'d late'})</span></td><td>${s.n}</td>
+  <td><div class="hb"><i style="width:${s.pct}%"></i></div> ${s.pct}%</td><td class="${s.late?'late':''}">${s.late}</td><td><span class="rag" style="background:${rag[0]}"></span>${rag[1]}</td></tr>`});
+ h+=`</tbody></table></div><div class="two"><div class="card"><h3>Workload by owner (open effort)</h3><table class="t"><thead><tr><th>Owner</th><th>Open tasks</th><th style="width:45%">Open effort (h)</th><th>Overdue</th></tr></thead><tbody>`;
+ const wl=users.map(u=>{const o=leaf.filter(t=>t.owner===u.id&&t.status!=='Completed');return{u,n:o.length,e:o.reduce((s,t)=>s+(+t.effort||0),0),l:o.filter(late).length}}).filter(x=>x.n);
+ const mx=Math.max(1,...wl.map(x=>x.e));
+ wl.sort((a,b)=>b.e-a.e).forEach(x=>h+=`<tr><td>${esc(x.u.name)}</td><td>${x.n}</td><td><div class="hb"><i style="width:${x.e*100/mx}%;background:#2e6ca4"></i></div> ${x.e}</td><td class="${x.l?'late':''}">${x.l}</td></tr>`);
+ h+=`</tbody></table></div><div class="card" id="overdue"><h3>Overdue tasks</h3><table class="t"><thead><tr><th>Task</th><th>Owner</th><th>Target</th><th>Days late</th></tr></thead><tbody>`;
+ lt.sort((a,b)=>a.target<b.target?-1:1).forEach(t=>h+=`<tr style="cursor:pointer" onclick="openTask(${t.id})"><td>${esc(t.name)}<div class="muted">${esc(projects.find(p=>p.id===t.projectId).name)}</div></td><td>${esc(uname(t.owner))}</td><td class="late">${fmt(t.target)}</td><td class="late">${dd(t.target,iso(TODAY))}</td></tr>`);
+ if(!lt.length)h+=`<tr><td colspan="4" class="muted">Nothing overdue.</td></tr>`;
+ h+=`</tbody></table></div></div><div class="card"><h3>Upcoming – next 14 days</h3><table class="t"><thead><tr><th>Target</th><th>Task</th><th>Project</th><th>Owner</th><th>Status</th></tr></thead><tbody>`;
+ const up=leaf.filter(t=>t.status!=='Completed'&&!late(t)&&t.target<=addD(14)).sort((a,b)=>a.target<b.target?-1:1);
+ up.forEach(t=>h+=`<tr><td>${fmt(t.target)}</td><td>${esc(t.name)}</td><td>${esc(projects.find(p=>p.id===t.projectId).name)}</td><td>${esc(uname(t.owner))}</td><td><span class="pill s-${SCLS[t.status]}">${t.status}</span></td></tr>`);
+ if(!up.length)h+=`<tr><td colspan="5" class="muted">Nothing due.</td></tr>`;
+ return h+'</tbody></table></div></div>';
+}
+
+/* Users */
+function userView(){
+ let h=`<div class="page"><div style="display:flex;align-items:center;margin-bottom:10px"><h2 style="margin:0;color:var(--pg);font-weight:600">Users</h2>${isAdmin()?'<button class="btn pri" style="margin-left:auto" onclick="openUser()">＋ Add User</button>':''}</div>
+ ${isAdmin()?'':'<div class="note" style="margin-bottom:10px">Only Admins can add or edit users.</div>'}
+ <div class="card"><table class="t"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Open tasks</th><th>Projects owned</th><th></th></tr></thead><tbody>`;
+ users.forEach(u=>{const o=tasks.filter(t=>t.owner===u.id&&t.status!=='Completed').length;
+  h+=`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.role}</td><td>${u.active?'<span class="pill s-c">Active</span>':'<span class="pill s-ns">Inactive</span>'}</td><td>${o}</td><td>${projects.filter(p=>p.owner===u.id).length}</td>
+  <td>${isAdmin()?`<button class="btn" onclick="openUser(${u.id})">Edit</button>`:''}</td></tr>`});
+ return h+'</tbody></table></div></div>';
+}
+
+/* ---------- dialogs ---------- */
+function dlg(title,body,foot){document.getElementById('dlg').innerHTML=`<div class="dh">${title}<span onclick="closeD()">✕</span></div><div class="db">${body}</div><div class="df">${foot}</div>`;document.getElementById('mask').classList.add('on')}
+function closeD(){document.getElementById('mask').classList.remove('on')}
+const v=id=>document.getElementById(id).value;
+const uopts=sel=>users.filter(u=>u.active||u.id===sel).map(u=>`<option value="${u.id}" ${u.id===sel?'selected':''}>${esc(u.name)}</option>`).join('');
+
+function openTask(id,o={}){
+ const t=id?tasks.find(x=>x.id===id):{projectId:o.pid,parentId:o.par||null,name:'',start:iso(TODAY),target:addD(7),owner:S.me,effort:8,status:'Not Started',remark:''};
+ const p=projects.find(x=>x.id===t.projectId),full=canEditP(p),dis=full?'':'disabled';
+ const par=t.parentId&&tasks.find(x=>x.id===t.parentId),hasK=id&&kids(id).length;
+ dlg(id?'Task Information':'New Task',`
+  ${full?'':'<div class="note">You can update Status and Remark on your task. Other fields are managed by the project owner.</div>'}
+  <label>Project</label><div class="full"><b>${esc(p.name)}</b>${par?` <span class="muted">› ${esc(par.name)}</span>`:''}</div>
+  <label>Task name</label><input id="f_n" class="full" value="${esc(t.name)}" ${dis}>
+  <label>Owner</label><select id="f_o" ${dis}>${uopts(t.owner)}</select>
+  <label>Effort (h)</label><input id="f_e" type="number" min="0" value="${t.effort}" ${dis||hasK?'disabled':''}>
+  <label>Start</label><input id="f_s" type="date" value="${t.start}" ${dis}>
+  <label>Target date</label><input id="f_t" type="date" value="${t.target}" ${dis}>
+  <label>Status</label><select id="f_st">${STAT.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}</select><span></span><span class="muted">${hasK?'Effort & dates roll up from subtasks':''}</span>
+  <label>Remark</label><textarea id="f_r" class="full">${esc(t.remark)}</textarea>`,
+  `${id&&full?`<button class="btn" style="margin-right:auto" onclick="delTask(${id})">Delete</button>`:''}<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveTask(${id||0},${t.projectId},${t.parentId||0},${o.after||0})">OK</button>`);
+ setTimeout(()=>{const n=document.getElementById('f_n');if(!n.disabled)n.focus()},0);
+}
+function saveTask(id,pid,par,after){
+ const d={name:v('f_n').trim(),owner:+v('f_o'),effort:+v('f_e')||0,start:v('f_s'),target:v('f_t'),status:v('f_st'),remark:v('f_r')};
+ if(!d.name){alert('Task name is required');return}
+ if(d.target<d.start){alert('Target date cannot be before start date');return}
+ if(id){Object.assign(tasks.find(x=>x.id===id),d)}
+ else{const nt={id:TID++,projectId:pid,parentId:par||null,...d};let i=tasks.length;
+  if(after){const ai=tasks.findIndex(x=>x.id===after);const ks=kids(after);i=(ks.length?tasks.indexOf(ks[ks.length-1]):ai)+1}
+  tasks.splice(i,0,nt);S.sel='t'+nt.id}
+ closeD();render()}
+function selT(){return S.sel&&S.sel[0]==='t'?tasks.find(x=>x.id===+S.sel.slice(1)):null}
+function selP(){if(!S.sel)return null;if(S.sel[0]==='p')return projects.find(p=>p.id===+S.sel.slice(1));const t=selT();return t&&projects.find(p=>p.id===t.projectId)}
+function newTask(){if(S.view!=='project')go('project');const p=selP()||(S.f.p!=='all'&&projects.find(x=>x.id==+S.f.p));
+ if(!p){alert('Select a project row (or a task) first.');return}if(!canEditP(p)){alert('Only the project owner or an Admin can add tasks.');return}
+ const t=selT();openTask(null,{pid:p.id,par:t&&t.parentId,after:t?t.id:0})}
+function newSub(){const t=selT();if(!t){alert('Select a task first.');return}if(t.parentId){alert('Only two levels are allowed: Task › Subtask.');return}
+ const p=projects.find(x=>x.id===t.projectId);if(!canEditP(p)){alert('Only the project owner or an Admin can add tasks.');return}
+ S.col['t'+t.id]=false;openTask(null,{pid:t.projectId,par:t.id})}
+function editSel(){const t=selT();if(t)return openTask(t.id);const p=selP();if(p)return openProject(p.id);alert('Select a row first.')}
+function delTask(id){if(!confirm('Delete this task'+(kids(id).length?' and its subtasks':'')+'?'))return;tasks=tasks.filter(x=>x.id!==id&&x.parentId!==id);S.sel=null;closeD();render()}
+function delSel(){const t=selT();if(!t)return alert('Select a task first.');if(!canEditP(projects.find(p=>p.id===t.projectId)))return alert('Not allowed.');delTask(t.id)}
+function indent(){const t=selT();if(!t)return alert('Select a task first.');if(t.parentId)return;if(kids(t.id).length)return alert('This task has subtasks – only two levels are allowed.');
+ const sib=tasks.filter(x=>x.projectId===t.projectId&&!x.parentId);const i=sib.indexOf(t);if(i<1)return alert('No task above to indent under.');
+ t.parentId=sib[i-1].id;S.col['t'+sib[i-1].id]=false;render()}
+function outdent(){const t=selT();if(!t||!t.parentId)return;const par=tasks.find(x=>x.id===t.parentId);tasks.splice(tasks.indexOf(t),1);
+ const ks=kids(par.id);tasks.splice((ks.length?tasks.indexOf(ks[ks.length-1]):tasks.indexOf(par))+1,0,t);t.parentId=null;render()}
+function stat(s){const t=selT();if(!t)return alert('Select a task first.');t.status=s;kids(t.id).forEach(k=>{if(s==='Completed')k.status=s});render()}
+
+function openProject(id){
+ const p=id?projects.find(x=>x.id===id):{name:'',goal:'',owner:S.me,start:iso(TODAY),target:addD(60)};
+ if(id&&!canEditP(p)){projInfo(p);return}
+ if(!id&&!isAdmin()){alert('Only Admins can create projects in this prototype.');return}
+ dlg(id?'Project Information':'New Project',`
+  <label>Project name</label><input id="f_n" class="full" value="${esc(p.name)}">
+  <label>Goal</label><textarea id="f_g" class="full" placeholder="What does success look like?">${esc(p.goal)}</textarea>
+  <label>Owner</label><select id="f_o">${uopts(p.owner)}</select><span></span><span></span>
+  <label>Start</label><input id="f_s" type="date" value="${p.start}">
+  <label>Target date</label><input id="f_t" type="date" value="${p.target}">`,
+  `<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveProject(${id||0})">OK</button>`)}
+function saveProject(id){const d={name:v('f_n').trim(),goal:v('f_g'),owner:+v('f_o'),start:v('f_s'),target:v('f_t')};
+ if(!d.name)return alert('Project name is required');
+ if(id)Object.assign(projects.find(p=>p.id===id),d);else{const np={id:PID++,...d};projects.push(np);S.sel='p'+np.id;S.f.p='all'}
+ closeD();go('project')}
+function projInfo(p){p=p&&p.id?p:selP()||(S.f.p!=='all'&&projects.find(x=>x.id==+S.f.p));if(!p)return alert('Select a project first.');
+ if(canEditP(p)&&arguments.length===0)return openProject(p.id);const s=pStats(p.id);
+ dlg('Project Information',`<label>Project</label><div class="full"><b>${esc(p.name)}</b></div><label>Goal</label><div class="full">${esc(p.goal)}</div>
+  <label>Owner</label><div>${esc(uname(p.owner))}</div><label>Dates</label><div>${fmt(p.start)} → ${fmt(p.target)}</div>
+  <label>Progress</label><div>${s.pct}% (${s.done}/${s.eff} h)</div><label>Overdue</label><div>${s.late}</div>`,`<button class="btn pri" onclick="closeD()">Close</button>`)}
+function delProject(){const p=selP();if(!p)return alert('Select a project first.');if(!isAdmin())return alert('Only Admins can delete projects.');
+ if(!confirm(`Delete project "${p.name}" and all its tasks?`))return;projects=projects.filter(x=>x!==p);tasks=tasks.filter(t=>t.projectId!==p.id);S.sel=null;render()}
+
+function openUser(id){if(!isAdmin())return alert('Only Admins can manage users.');
+ const u=id?users.find(x=>x.id===id):{name:'',email:'',role:'Member',active:true};
+ dlg(id?'Edit User':'Add User',`<label>Full name</label><input id="f_n" class="full" value="${esc(u.name)}">
+  <label>Email</label><input id="f_m" class="full" value="${esc(u.email)}">
+  <label>Role</label><select id="f_r"><option ${u.role==='Member'?'selected':''}>Member</option><option ${u.role==='Admin'?'selected':''}>Admin</option></select>
+  <label>Status</label><select id="f_a"><option value="1" ${u.active?'selected':''}>Active</option><option value="0" ${u.active?'':'selected'}>Inactive</option></select>
+  <div class="note">Admin: manage users & all projects. Member: sees own projects and tasks assigned to them; can update status & remarks.</div>`,
+  `<button class="btn" onclick="closeD()">Cancel</button><button class="btn pri" onclick="saveUser(${id||0})">OK</button>`)}
+function saveUser(id){const d={name:v('f_n').trim(),email:v('f_m').trim(),role:v('f_r'),active:v('f_a')==='1'};
+ if(!d.name||!d.email)return alert('Name and email are required');
+ if(id){if(id===S.me&&(!d.active||d.role!=='Admin')&&!users.some(u=>u.id!==id&&u.role==='Admin'&&u.active))return alert('At least one active Admin is required.');Object.assign(users.find(u=>u.id===id),d)}
+ else users.push({id:UID++,...d});closeD();go('users')}
+
+function exportCSV(){const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+ const rows=[['Project','Parent Task','Task','Owner','Start','Target Date','Effort (h)','Status','Overdue','Remark']];
+ tasks.forEach(t=>{const p=projects.find(x=>x.id===t.projectId),par=t.parentId&&tasks.find(x=>x.id===t.parentId);
+  rows.push([p.name,par?par.name:'',t.name,uname(t.owner),t.start,t.target,t.effort,t.status,late(t)?'Yes':'No',t.remark])});
+ const b=new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='projectdesk_tasks.csv';a.click()}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();if(e.key==='Insert'&&S.view==='project')newTask()});
+ribbon();render();
+</script>
+</body>
+</html>

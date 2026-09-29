@@ -12,24 +12,31 @@ $me = $st->fetch() ?: ['name' => '', 'email' => ''];
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="<?= h(csrf_token()) ?>">
-  <meta name="theme-color" content="#1F5F8B">
-  <title>rcfamily</title>
+  <meta name="theme-color" content="<?= env_theme_color() ?>">
+  <title><?= h(env_title_prefix()) ?>rcfamily</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="rctask">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/app.css?v=1">
+  <link rel="stylesheet" href="assets/app.css?v=2">
 </head>
-<body>
+<body class="env-<?= app_env() ?>">
+<?= env_banner() ?>
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>rcfamily</h1>
+      <h1>rcfamily<?= env_badge() ?></h1>
       <div class="sub">Tasks sorted by when in your week you can actually do them</div>
     </div>
     <div class="top-r">
       <span class="nowpill" id="nowPill"></span>
+      <button class="btn small primary" id="installBtn" type="button" hidden>Install app</button>
       <button class="btn small" id="openSettings" type="button">Edit bandwidths</button>
       <a class="btn small ghost" href="logout.php" title="<?= h($me['email']) ?>">Sign out</a>
     </div>
@@ -141,6 +148,28 @@ Fix the loose balcony door hinge
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
-<script src="assets/app.js?v=1"></script>
+<script src="assets/app.js?v=2"></script>
+<script>
+/* PWA: service worker, install button, offline notice */
+(function () {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW registration failed', e); });
+    });
+  }
+  var installBtn = document.getElementById('installBtn'), deferred = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; installBtn.hidden = false; });
+  installBtn.addEventListener('click', function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(function () { deferred = null; installBtn.hidden = true; });
+  });
+  window.addEventListener('appinstalled', function () { installBtn.hidden = true; });
+  function note(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; setTimeout(function () { t.hidden = true; }, 3000); }
+  window.addEventListener('offline', function () { note('You are offline. You can view tasks but not save changes.'); });
+  window.addEventListener('online', function () { note('Back online'); });
+  if (location.hash === '#add') { var p = document.getElementById('prompt'); if (p) p.focus(); }
+})();
+</script>
 </body>
 </html>
